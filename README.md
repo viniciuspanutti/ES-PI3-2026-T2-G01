@@ -4,8 +4,8 @@ Repositório do Projeto integrador do 3º semestre da faculdade de Eng Software 
 
 Engenharia de Software, 3º Semestre - Turma 102
 GRUPO 01 -
-    - CAMILA FERNANDES COSTACURTA
-    - GABRIEL APARECIDO BUBULA
-    - GUILHERME PREVENTI CORREIA
-    - TOM HEWTSON BEAN
-    - VINÍCIUS PANUTTI SALGADO
+    - CAMILA FERNANDES COSTACURTA </br>
+    - GABRIEL APARECIDO BUBULA </br>
+    - GUILHERME PREVENTI CORREIA </br>
+    - TOM HEWTSON BEAN </br>
+    - VINÍCIUS PANUTTI SALGADO </br>
