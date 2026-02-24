@@ -5,18 +5,18 @@ Nosso objetivo é dar características semelhantes às de uma rede social corpor
 </br>
 
 ### Integrantes Grupo 01: </br>
-    - CAMILA FERNANDES COSTACURTA </br>
-    - GABRIEL APARECIDO BUBULA </br>
-    - GUILHERME PREVENTI CORREIA </br>
-    - TOM HEWTSON BEAN </br>
-    - VINÍCIUS PANUTTI SALGADO </br>
+    - CAMILA FERNANDES COSTACURTA 
+    - GABRIEL APARECIDO BUBULA 
+    - GUILHERME PREVENTI CORREIA 
+    - TOM HEWTSON BEAN
+    - VINÍCIUS PANUTTI SALGADO
 </br>
 
 ### Tecnologias Utilizadas: </br>
-    - Framework Flutter (para dispositivos android, IOS e mac) </br>
-    - Linguagem de programação Dart </br>
-    - Firebase (banco de dados NoSQL) </br>
-    - NodeJS (Servidor da aplicação) </br>
+    - Framework Flutter (para dispositivos android, IOS e mac)
+    - Linguagem de programação Dart
+    - Firebase (banco de dados NoSQL) 
+    - NodeJS (Servidor da aplicação)
 </br>
 
 ### Como rodar este sistema na sua máquina local? </br>
