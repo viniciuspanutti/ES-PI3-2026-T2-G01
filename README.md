@@ -2,6 +2,7 @@
 Repositório do Projeto integrador do 3º semestre, Turma 102, do curso de Engenharia Software</br>
 Será desenvolvido uma parte de um ecossistema digital de investimentos baseado na negociação simulada de tokens representativos de Startups vinculadas ao mescla (aceleradora de Startups vinculada a nossa instituição de ensino - a PUC-Campinas).</br>
 Nosso objetivo é dar características semelhantes às de uma rede social corporativa. Combinando um ambiente informativo e interativo com investidores.</br>
+A ideação de interface, mapeamento do projeto, desenvolvimento da User interface focando no nosso público alvo, tomou vigor na data de 13/03/2026 com as aulas práticas que tivemos na disciplina de "experiência do usuário para dispositivos móveis". Entrando na fase final desta etapa e iniciando a estrutura e raiz do código.<\br>
 </br>
 
 ### Integrantes Grupo 01: </br>
