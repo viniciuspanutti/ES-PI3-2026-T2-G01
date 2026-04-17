@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart'; // Importa a biblioteca visual base do Flutter.
+import '../../data/exchange_service.dart'; // Ajuste o 'seu_projeto'
 
 class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um componente que não muda de estado.
   
@@ -45,13 +46,30 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
 
             const SizedBox(height: 30),
 
-            Row( // Organiza os botões de ação lado a lado.
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribui os botões com espaços iguais entre eles.
+            Row( 
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly, 
               children: [
-                _buildCircularAction(Icons.show_chart, 'Comprar'), // Botão para ação de compra.
-                _buildCircularAction(Icons.swap_horiz, 'Trocar'), // Botão para ação de permuta.
-                _buildCircularAction(Icons.send, 'Enviar'), // Botão para ação de transferência.
-                _buildCircularAction(Icons.file_download, 'Receber'), // Botão para ação de recebimento.
+                _buildCircularAction(
+                  icon: Icons.show_chart, 
+                  label: 'Comprar',
+                  onTap: () async {
+                    print("🔥 Botão pressionado! Iniciando comunicação com o backend...");
+                    try {
+                      // Pegue o ID real da DevMatch (ou a que você preferir do banco)
+                      String idDaStartup = '5bfozOLJ0a93No2wuWni'; 
+                      
+                      // Chama o nosso motor financeiro!
+                      await ExchangeService().buyTokens(idDaStartup, 10);
+                      
+                      print("✅ Sucesso! O backend autorizou a compra.");
+                    } catch (e) {
+                      print("❌ Erro retornado pelo backend: $e");
+                    }
+                  },
+                ), 
+                _buildCircularAction(icon: Icons.swap_horiz, label: 'Trocar', onTap: () {}), // Botão para ação de permuta.
+                _buildCircularAction(icon: Icons.send, label: 'Enviar', onTap: () {}), 
+                _buildCircularAction(icon: Icons.file_download, label: 'Receber', onTap: () {}), 
               ],
             ),
 
@@ -78,20 +96,25 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
     );
   }
 
-  Widget _buildCircularAction(IconData icon, String label) { // Função que cria o desenho de um botão circular com ícone e texto.
-    return Column(
-      children: [
-        Container( // Cria o círculo branco ao redor do ícone.
-          padding: const EdgeInsets.all(15),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
+
+  // Alteramos a assinatura da função para receber a ação onTap
+  Widget _buildCircularAction({required IconData icon, required String label, required VoidCallback onTap}) { 
+    return GestureDetector(
+      onTap: onTap, // Ativa o toque no Flutter
+      child: Column(
+        children: [
+          Container( 
+            padding: const EdgeInsets.all(15),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.black, size: 24),
           ),
-          child: Icon(icon, color: Colors.black, size: 24),
-        ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)), // Nome da ação abaixo do círculo.
-      ],
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)), 
+        ],
+      ),
     );
   }
 
