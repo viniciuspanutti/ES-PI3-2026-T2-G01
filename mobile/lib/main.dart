@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 //import 'package:cloud_firestore/cloud_firestore.dart';
 //import 'package:cloud_functions/cloud_functions.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
-
+import 'features/startups/presentation/screen/catalogo_de_startups.dart';
 import 'features/exchange/presentation/screen/wallet_screen.dart';
 
 void main() async {
@@ -28,7 +28,8 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       // A tela inicial agora aponta para o lugar correto
-      home: const CarteiraBalcaoScreen(),
+      //home: const CarteiraBalcaoScreen(),
+      home: const CatalogoStartupsPage(),
     );
   }
 }
