@@ -91,5 +91,5 @@ class MfaScreen extends StatelessWidget { // Define a tela de Verificação de S
         style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Estilo do número digitado.
       ),
     );
-  }aqu mesmo?
+  }
 }
