@@ -1,136 +1,159 @@
-import 'package:flutter/material.dart'; // Importa a biblioteca visual base do Flutter.
 
-class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um componente que não muda de estado.
-  
-  const CarteiraBalcaoScreen({super.key}); // Construtor padrão para identificar o widget.
+import 'package:flutter/material.dart';
+
+// Definindo a classe da tela como um StatelessWidget (tela que não muda de estado sozinha)
+class CarteiraBalcaoScreen extends StatelessWidget {
+  const CarteiraBalcaoScreen({super.key});
 
   @override
-  Widget build(BuildContext context) { // Função principal que desenha a interface na tela.
-    
-    const Color roxoMescla = Color(0xFF512DA8); // Define a cor roxa principal da identidade visual.
-    const Color fundoCinza = Color(0xFFF5F5F5); // Define a cor cinza clara para o fundo da página.
+  Widget build(BuildContext context) {
+    // Definindo constantes de cores para manter o padrão visual do MesclaInvest
+    const Color roxoMescla = Color(0xFF512DA8);
+    const Color fundoCinza = Color(0xFFF5F5F5);
 
-    return Scaffold( // Estrutura base que organiza os elementos da tela.
-      backgroundColor: fundoCinza, // Aplica a cor de fundo cinza em toda a tela.
-      appBar: AppBar( // Cria a barra superior de navegação.
-        leading: IconButton( // Define o botão que fica no canto esquerdo da barra.
-          icon: const Icon(Icons.arrow_back, color: Colors.black), // Ícone de seta para voltar.
-          onPressed: () => Navigator.pop(context), // Comando para fechar a tela atual e voltar à anterior.
+    // Lista de Mapas: Simula os dados que viriam do seu Firebase/Backend
+    final List<Map<String, dynamic>> transacoes = [
+      {'titulo': 'Transferência', 'sub': 'To: 0x38dc...b037', 'valor': '93 BYD', 'icon': Icons.send},
+      {'titulo': 'Compra', 'sub': 'To: 0x7131...8b6a', 'valor': '23.4 BYD', 'icon': Icons.shopping_cart},
+      {'titulo': 'Recebido', 'sub': 'Address: 0x4d1e...c37C', 'valor': '57 BYD', 'icon': Icons.swap_vert},
+      {'titulo': 'Recebido', 'sub': 'To: 0x38dc...b037', 'valor': '12.2 BYD', 'icon': Icons.send},
+    ];
+
+    return Scaffold(
+      backgroundColor: fundoCinza, // Define a cor de fundo da tela inteira
+      appBar: AppBar(
+        // leading: O que aparece no início da barra (botão de voltar)
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context), // Comando para fechar a tela e voltar
         ),
-        title: const Text('Voltar', style: TextStyle(color: Colors.black, fontSize: 18)), // Texto da barra superior.
-        backgroundColor: Colors.transparent, // Deixa o fundo da barra invisível.
-        elevation: 0, // Remove a sombra embaixo da barra superior.
+        title: const Text('Voltar', style: TextStyle(color: Colors.black, fontSize: 18)),
+        backgroundColor: Colors.transparent, // Barra transparente para um look moderno
+        elevation: 0, // Remove a sombra da barra superior
       ),
-      body: SingleChildScrollView( // Permite rolar a tela se o conteúdo for maior que o visor.
-        child: Column( // Organiza os elementos um abaixo do outro.
-          children: [
-            Padding( // Adiciona espaçamento interno nas laterais do cabeçalho.
-              padding: const EdgeInsets.symmetric(horizontal: 25.0),
-              child: Column(
-                children: [
-                  const Align( // Alinha o texto de variação financeira à direita.
-                    alignment: Alignment.centerRight,
-                    child: Text('\$1.297,67  +0.75%', 
-                      style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 12)),
-                  ),
-                  const SizedBox(height: 10), // Cria um espaço vertical de 10 pixels.
-                  const Text('BYD', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: 2)), // Nome da moeda em destaque.
-                  const SizedBox(height: 10),
-                  const Text('345.71 BYD', // Exibe o saldo principal em quantidade de moedas.
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: roxoMescla)),
-                  Text('R\$ 2.107,34', style: TextStyle(color: Colors.grey[600], fontSize: 16)), // Exibe o saldo convertido em Reais.
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            Row( // Organiza os botões de ação lado a lado.
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribui os botões com espaços iguais entre eles.
-              children: [
-                _buildCircularAction(Icons.show_chart, 'Comprar'), // Botão para ação de compra.
-                _buildCircularAction(Icons.swap_horiz, 'Trocar'), // Botão para ação de permuta.
-                _buildCircularAction(Icons.send, 'Enviar'), // Botão para ação de transferência.
-                _buildCircularAction(Icons.file_download, 'Receber'), // Botão para ação de recebimento.
-              ],
-            ),
-
-            const SizedBox(height: 40),
-
-            Padding( // Área do histórico de movimentações.
-              padding: const EdgeInsets.symmetric(horizontal: 25.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, // Alinha o título "Hoje" à esquerda.
-                children: [
-                  const Text('Hoje', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), // Título da seção de histórico.
-                  const SizedBox(height: 20),
-                  _buildTransactionTile('Transferencia', 'To: 0x38dc...b037', '93 BYD', Icons.send, Colors.greenAccent), // Item de transferência enviada.
-                  _buildTransactionTile('Compra', 'To: 0x7131...8b6a', '23.4 BYD', Icons.shopping_cart, Colors.greenAccent), // Item de compra realizada.
-                  _buildTransactionTile('Recebido', 'Address: 0x4d1e...c37C', '57 BYD', Icons.swap_vert, Colors.greenAccent), // Item de valor recebido.
-                  _buildTransactionTile('Recebido', 'To: 0x38dc...b037', '12.2 BYD', Icons.send, Colors.greenAccent), // Outro item de valor recebido.
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNav(roxoMescla), // Chama a barra de navegação customizada no rodapé.
-    );
-  }
-
-  Widget _buildCircularAction(IconData icon, String label) { // Função que cria o desenho de um botão circular com ícone e texto.
-    return Column(
-      children: [
-        Container( // Cria o círculo branco ao redor do ícone.
-          padding: const EdgeInsets.all(15),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: Colors.black, size: 24),
-        ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)), // Nome da ação abaixo do círculo.
-      ],
-    );
-  }
-
-  Widget _buildTransactionTile(String title, String sub, String value, IconData icon, Color iconColor) { // Função que cria cada linha da lista de transações.
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 25.0),
-      child: Row(
-        children: [
-          Icon(icon, color: iconColor, size: 22), // Ícone representativo da transação.
-          const SizedBox(width: 15),
-          Expanded( // Faz os textos ocuparem o meio da tela, empurrando o valor para o fim.
+      // CustomScrollView: Permite criar uma tela onde partes diferentes rolam juntas
+      body: CustomScrollView(
+        slivers: [
+          // SliverToBoxAdapter: Permite colocar widgets comuns (como Column) dentro do ScrollView
+          SliverToBoxAdapter(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)), // Nome da transação.
-                Text(sub, style: const TextStyle(color: Colors.grey, fontSize: 11)), // Endereço ou detalhes da transação.
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                  child: Column(
+                    children: [
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: Text('\$1.297,67  +0.75%',
+                            style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ),
+                      const SizedBox(height: 10), // Espaçamento vertical
+                      const Text('BYD', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                      const SizedBox(height: 10),
+                      const Text('345.71 BYD',
+                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: roxoMescla)),
+                      Text('R\$ 2.107,34', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+                // Linha com os botões circulares de ação
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribui os botões por igual
+                  children: [
+                    _buildCircularAction(Icons.show_chart, 'Comprar'),
+                    _buildCircularAction(Icons.swap_horiz, 'Trocar'),
+                    _buildCircularAction(Icons.send, 'Enviar'),
+                    _buildCircularAction(Icons.file_download, 'Receber'),
+                  ],
+                ),
+                const SizedBox(height: 40),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 25.0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Hoje', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ),
+                const SizedBox(height: 10),
               ],
             ),
           ),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)), // Valor transacionado.
+          
+          // SliverPadding: Dá margem para a lista de transações
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            // SliverList: A versão da ListView para dentro de um CustomScrollView
+            sliver: SliverList(
+              // delegate: O "gerente" que constrói os itens conforme o usuário rola a tela
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final item = transacoes[index]; // Pega os dados da transação atual
+                  return Card(
+                    elevation: 1, // Sombra leve embaixo do card
+                    margin: const EdgeInsets.only(bottom: 12), // Espaço entre os cards
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: ListTile(
+                      leading: Icon(item['icon'], color: Colors.greenAccent), // Ícone à esquerda
+                      title: Text(item['titulo'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text(item['sub']), // Texto pequeno abaixo do título
+                      trailing: Text(item['valor'], style: const TextStyle(fontWeight: FontWeight.bold)), // Texto à direita
+                      onTap: () {
+                        // Função disparada ao clicar na transação
+                        print("Clicou na transação: ${item['titulo']}");
+                      },
+                    ),
+                  );
+                },
+                childCount: transacoes.length, // Diz ao Flutter quantos itens existem
+              ),
+            ),
+          ),
+        ],
+      ),
+      // Barra de navegação inferior arredondada
+      bottomNavigationBar: _buildBottomNav(roxoMescla),
+    );
+  }
+
+  // Função Auxiliar: Cria o botão circular com ícone e texto
+  Widget _buildCircularAction(IconData icon, String label) {
+    return InkWell(
+      onTap: () => print("Clicou em $label"), // Efeito visual de clique + ação
+      borderRadius: BorderRadius.circular(50),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(15),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle, // Transforma o Container num círculo
+            ),
+            child: Icon(icon, color: Colors.black, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  Widget _buildBottomNav(Color activeColor) { // Função que constrói a barra de navegação flutuante e escura.
+  // Função Auxiliar: Constrói a barra de navegação personalizada (estilo flutuante)
+  Widget _buildBottomNav(Color activeColor) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20), // Define as margens para a barra não encostar nas bordas.
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20), // Margens para parecer flutuante
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF222222), // Cor de fundo grafite da barra.
-        borderRadius: BorderRadius.circular(40), // Arredonda totalmente as pontas da barra.
+        color: const Color(0xFF222222), // Fundo quase preto
+        borderRadius: BorderRadius.circular(40), // Bordas bem arredondadas
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Espaça os ícones do menu igualmente.
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Icon(Icons.home_filled, color: Colors.white70), // Ícone da página inicial.
-          const Icon(Icons.search, color: Colors.white70), // Ícone de busca.
-          Container( // Widget que destaca o botão da aba atual (Balcão).
+          const Icon(Icons.home_filled, color: Colors.white70),
+          const Icon(Icons.search, color: Colors.white70),
+          // Botão de destaque "Balcão"
+          Container(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
             decoration: BoxDecoration(
               color: activeColor,
@@ -138,13 +161,13 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
             ),
             child: const Row(
               children: [
-                Icon(Icons.account_balance_wallet, color: Colors.white, size: 20), // Ícone de carteira.
+                Icon(Icons.account_balance_wallet, color: Colors.white, size: 20),
                 SizedBox(width: 8),
-                Text('Balcão', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), // Texto da aba ativa.
+                Text('Balcão', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
-          const Icon(Icons.person_outline, color: Colors.white70), // Ícone de perfil de usuário.
+          const Icon(Icons.person_outline, color: Colors.white70),
         ],
       ),
     );
