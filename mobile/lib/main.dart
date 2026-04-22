@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_application_1/features/startups/presentation/screens/wallet_screen.dart';
 
 void main() {
@@ -12,14 +11,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MesclaInvest',
       debugShowCheckedModeBanner: false,
+      title: 'MesclaInvest',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF512DA8)),
         useMaterial3: true,
+        primarySwatch: Colors.deepPurple,
       ),
-  
-      home: const CarteiraBalcaoScreen(), 
+      home: const CarteiraBalcaoScreen(),
     );
   }
 }
