@@ -1,241 +1,243 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
-import 'app_storage.dart'; 
-
-class CarteiraBalcaoScreen extends StatefulWidget {
-  const CarteiraBalcaoScreen({super.key});
+class MfaScreen extends StatefulWidget {
+  const MfaScreen({super.key});
 
   @override
-  State<CarteiraBalcaoScreen> createState() => _CarteiraBalcaoScreenState();
+  State<MfaScreen> createState() => _MfaScreenState();
 }
 
-class _CarteiraBalcaoScreenState extends State<CarteiraBalcaoScreen> {
-  double _balance = 0;
-  List<Map<String, dynamic>> _transacoes = [];
-  bool _loading = true;
+class _MfaScreenState extends State<MfaScreen> {
+  static const int _codeLength = 5;
+  static const int _initialSeconds = 30;
+
+  final List<TextEditingController> _controllers = List.generate(
+    _codeLength,
+    (_) => TextEditingController(),
+  );
+  final List<FocusNode> _focusNodes = List.generate(
+    _codeLength,
+    (_) => FocusNode(),
+  );
+
+  Timer? _timer;
+  int _secondsRemaining = _initialSeconds;
+  bool _isVerifying = false;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _startTimer();
   }
 
-  Future<void> _load() async {
-    final balance = await AppStorage.getWalletBalance();
-    final txs = await AppStorage.getWalletTransactions();
-    if (!mounted) return;
-    setState(() {
-      _balance = balance;
-      _transacoes = txs;
-      _loading = false;
+  @override
+  void dispose() {
+    _timer?.cancel();
+    for (final controller in _controllers) { controller.dispose(); }
+    for (final focusNode in _focusNodes) { focusNode.dispose(); }
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    setState(() => _secondsRemaining = _initialSeconds);
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining == 0) {
+        timer.cancel();
+        return;
+      }
+      setState(() => _secondsRemaining--);
     });
+  }
+
+  String get _codeValue => _controllers.map((c) => c.text).join();
+
+  bool get _canVerify =>
+      _codeValue.length == _codeLength &&
+      _codeValue.runes.every((char) => char >= 48 && char <= 57);
+
+  void _onCodeChanged(int index, String value) {
+    if (value.isNotEmpty && index < _codeLength - 1) {
+      _focusNodes[index + 1].requestFocus();
+    }
+    if (value.isEmpty && index > 0) {
+      _focusNodes[index - 1].requestFocus();
+    }
+    setState(() {});
+  }
+
+  Future<void> _verifyCode() async {
+    if (!_canVerify || _isVerifying) return;
+    setState(() => _isVerifying = true);
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    if (!mounted) return;
+    setState(() => _isVerifying = false);
+    Navigator.pushReplacementNamed(context, '/wallet');
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color roxoPrincipal = Color(0xFF6B4FD8);
-    const Color fundoBranco = Colors.white;
-
-    if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    const Color roxoEscuro = Color(0xFF1F1435);
+    const Color roxoDestaque = Color(0xFF4A2A84);
+    const Color cinzaFundo = Color(0xFF6B6B6B);
 
     return Scaffold(
-      backgroundColor: fundoBranco,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black, size: 28),
-          onPressed: () => Navigator.maybePop(context),
-        ),
-        title: const Text(
-          'Voltar',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 25.0),
-            child: Column(
-              children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: RichText(
-                    text: const TextSpan(
-                      style: TextStyle(fontSize: 13),
-                      children: [
-                        TextSpan(text: '\$1.297,67  ', style: TextStyle(color: Colors.black54)),
-                        TextSpan(
-                          text: '+0.75%', 
-                          style: TextStyle(color: Color(0xFF00C896), fontWeight: FontWeight.bold)
+      backgroundColor: cinzaFundo,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircleAvatar(radius: 4, backgroundColor: roxoEscuro),
+                  Container(width: 40, height: 1, color: roxoEscuro),
+                  const CircleAvatar(radius: 4, backgroundColor: roxoEscuro),
+                ],
+              ),
+              const SizedBox(height: 30),
+              const Text(
+                'CRIE SUA CONTA',
+                style: TextStyle(
+                  color: roxoEscuro,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 35),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'VERIFICAÇÃO DE\nSEGURANÇA',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: roxoDestaque,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w300,
+                          height: 1.2,
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Insira o código de 5 dígitos',
+                        style: TextStyle(color: Colors.black54, fontSize: 16),
+                      ),
+                      const SizedBox(height: 40),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(
+                            _codeLength,
+                            (index) => _buildCodeField(index),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: _canVerify ? _verifyCode : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: roxoDestaque,
+                            // AQUI: Usando withValues em vez de withOpacity
+                            disabledBackgroundColor: roxoDestaque.withValues(alpha: 0.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: _isVerifying
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                                  ),
+                                )
+                              : const Text(
+                                  'Acessar Conta',
+                                  style: TextStyle(color: Colors.white, fontSize: 18),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 25),
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: _secondsRemaining == 0 ? () {} : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF13092D),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Text(
+                    _secondsRemaining == 0
+                        ? 'Concluir o Cadastro'
+                        : 'Concluir o Cadastro (${_secondsRemaining}s)',
+                    style: TextStyle(
+                      color: _secondsRemaining == 0 ? Colors.white : Colors.white54,
+                      fontSize: 16,
                     ),
                   ),
                 ),
-                const SizedBox(height: 15),
-                const Text(
-                  'BYD',
-                  style: TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '${_balance.toStringAsFixed(2)} BYD',
-                  style: const TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w600,
-                    color: roxoPrincipal,
-                  ),
-                ),
-                Text(
-                  'R\$ ${(_balance * 6.1).toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 35),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildCircularAction(Icons.analytics_outlined, 'Investir'),
-              _buildCircularAction(Icons.swap_horiz_rounded, 'Trocar'),
-              _buildCircularAction(Icons.send_rounded, 'Enviar'),
-              _buildCircularAction(Icons.south_west_rounded, 'Receber'),
+              ),
             ],
           ),
-          const SizedBox(height: 35),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 25),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Hoje',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 15),
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: _transacoes.length,
-                      separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF0F0F0)),
-                      itemBuilder: (context, index) {
-                        final item = _transacoes[index];
-                        return _buildTransactionItem(item);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomNav(roxoPrincipal),
-    );
-  }
-
-  Widget _buildCircularAction(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          width: 55,
-          height: 55,
-          decoration: const BoxDecoration(
-            color: Color(0xFFF2F2F2),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: Colors.black, size: 24),
         ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black87),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTransactionItem(Map<String, dynamic> item) {
-    bool isNeg = item['value'].toString().contains('-');
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: const Color(0xFFE8F5E9),
-            radius: 20,
-            child: Icon(
-              isNeg ? Icons.shopping_cart_outlined : Icons.south_west,
-              size: 18,
-              color: const Color(0xFF2E7D32),
-            ),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                Text(
-                  'To: 0x18dcc0e...e2bf7c64...',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          Text(
-            item['value'],
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildBottomNav(Color activeColor) {
-    return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-        height: 70,
-        decoration: BoxDecoration(
-          color: const Color(0xFF2D2D2D),
-          borderRadius: BorderRadius.circular(35),
+  Widget _buildCodeField(int index) {
+    return SizedBox(
+      width: 45,
+      height: 55,
+      child: TextField(
+        controller: _controllers[index],
+        focusNode: _focusNodes[index],
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        maxLength: 1,
+        style: const TextStyle(
+          color: Color(0xFF4A2A84),
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            const Icon(Icons.home_filled, color: Colors.white, size: 28),
-            const Icon(Icons.search, color: Colors.white54, size: 28),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4C3592),
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.account_balance_wallet, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('Balcão', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-            const CircleAvatar(
-              radius: 14,
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.person_outline, color: Colors.white, size: 20),
-            ),
-          ],
+        decoration: InputDecoration(
+          counterText: '',
+          contentPadding: EdgeInsets.zero,
+          filled: true,
+          fillColor: const Color(0xFFEFEFEF),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(4),
+            borderSide: const BorderSide(color: Color(0xFF7D48CB), width: 1.5),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(4),
+            borderSide: const BorderSide(color: Color(0xFF4A2A84), width: 2),
+          ),
         ),
+        onChanged: (value) => _onCodeChanged(index, value),
       ),
     );
   }
