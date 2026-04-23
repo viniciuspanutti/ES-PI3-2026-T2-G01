@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../home/components/btn_cadastrar.dart';
+import '../../../home/components/btn_email_enviado.dart';
+import '../../../home/components/btn_home.dart';
+import '../../../home/components/btn_login.dart';
+import '../../../home/components/btn_rec_senha.dart';
+import '../../../home/components/btn_login_senha.dart';
+import '../../../home/components/seta_voltar.dart';
 
 import 'app_storage.dart';
 
@@ -62,10 +69,17 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _goToRegister() {
+    Navigator.pushNamed(context, '/register');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(
+        title: const Text('Login'),
+        leading: SetaVoltar(ontap: () => Navigator.maybePop(context)),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -95,27 +109,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
               const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : _login,
-                  child: _loading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Entrar'),
-                ),
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                BotaoLogin(onTap: _login),
+              MudarSenha(
+                onTap: () => Navigator.pushNamed(context, '/forgot'),
               ),
-              TextButton(
-                onPressed: () => Navigator.pushNamed(context, '/forgot'),
-                child: const Text('Esqueci minha senha'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pushNamed(context, '/register'),
-                child: const Text('Criar conta'),
-              ),
+              const SizedBox(height: 8),
+              FazerLogin(onTap: _goToRegister),
             ],
           ),
         ),
@@ -188,7 +193,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Cadastro')),
+      appBar: AppBar(
+        title: const Text('Cadastro'),
+        leading: SetaVoltar(ontap: () => Navigator.maybePop(context)),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -202,8 +210,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 return null;
               }),
               _field(_emailController, 'E-mail', (value) {
-                if (value == null || !value.contains('@'))
+                if (value == null || !value.contains('@')) {
                   return 'E-mail invalido';
+                }
                 return null;
               }),
               _field(_cpfController, 'CPF', (value) {
@@ -228,13 +237,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
               const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _register,
-                  child: const Text('Cadastrar'),
-                ),
-              ),
+              BotaoCadastrar(onTap: _register),
             ],
           ),
         ),
@@ -265,6 +268,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  bool _instructionsSent = false;
 
   @override
   void dispose() {
@@ -285,48 +289,52 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          found
-              ? 'Instrucoes enviadas para o e-mail cadastrado'
-              : 'E-mail nao encontrado',
-        ),
-      ),
-    );
+    if (!found) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('E-mail nao encontrado')));
+      return;
+    }
+
+    setState(() => _instructionsSent = true);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Recuperar senha')),
+      appBar: AppBar(
+        title: const Text('Recuperar senha'),
+        leading: SetaVoltar(ontap: () => Navigator.maybePop(context)),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'E-mail'),
-                validator: (value) {
-                  if (value == null || !value.contains('@'))
-                    return 'E-mail invalido';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _sendInstructions,
-                  child: const Text('Enviar instrucoes'),
+        child: _instructionsSent
+            ? Center(
+                child: BotaoVoltarMenu(
+                  onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+                ),
+              )
+            : Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(labelText: 'E-mail'),
+                      validator: (value) {
+                        if (value == null || !value.contains('@')) {
+                          return 'E-mail invalido';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    BotaoRecuperar(onTap: _sendInstructions),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
       ),
     );
   }
 }
+
