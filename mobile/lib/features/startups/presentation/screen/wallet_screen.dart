@@ -1,7 +1,5 @@
-
 import 'package:flutter/material.dart';
-
-import 'app_storage.dart'; 
+import 'app_storage.dart';
 
 class CarteiraBalcaoScreen extends StatefulWidget {
   const CarteiraBalcaoScreen({super.key});
@@ -32,6 +30,27 @@ class _CarteiraBalcaoScreenState extends State<CarteiraBalcaoScreen> {
     });
   }
 
+  void _onActionTap(String label) {
+    if (label == 'Investir') {
+      final updated = <Map<String, dynamic>>[
+        {
+          'title': 'Compra',
+          'value': '-10.00 BYD',
+        },
+        ..._transacoes,
+      ];
+      setState(() {
+        _balance += 10;
+        _transacoes = updated;
+      });
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$label em desenvolvimento')));
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color roxoPrincipal = Color(0xFF6B4FD8);
@@ -50,7 +69,11 @@ class _CarteiraBalcaoScreenState extends State<CarteiraBalcaoScreen> {
         ),
         title: const Text(
           'Voltar',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20),
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -67,10 +90,16 @@ class _CarteiraBalcaoScreenState extends State<CarteiraBalcaoScreen> {
                     text: const TextSpan(
                       style: TextStyle(fontSize: 13),
                       children: [
-                        TextSpan(text: '\$1.297,67  ', style: TextStyle(color: Colors.black54)),
                         TextSpan(
-                          text: '+0.75%', 
-                          style: TextStyle(color: Color(0xFF00C896), fontWeight: FontWeight.bold)
+                          text: '\$1.297,67  ',
+                          style: TextStyle(color: Colors.black54),
+                        ),
+                        TextSpan(
+                          text: '+0.75%',
+                          style: TextStyle(
+                            color: Color(0xFF00C896),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -96,7 +125,11 @@ class _CarteiraBalcaoScreenState extends State<CarteiraBalcaoScreen> {
                 ),
                 Text(
                   'R\$ ${(_balance * 6.1).toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -120,13 +153,18 @@ class _CarteiraBalcaoScreenState extends State<CarteiraBalcaoScreen> {
                 children: [
                   const Text(
                     'Hoje',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black54),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black54,
+                    ),
                   ),
                   const SizedBox(height: 15),
                   Expanded(
                     child: ListView.separated(
                       itemCount: _transacoes.length,
-                      separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF0F0F0)),
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 1, color: Color(0xFFF0F0F0)),
                       itemBuilder: (context, index) {
                         final item = _transacoes[index];
                         return _buildTransactionItem(item);
@@ -144,23 +182,30 @@ class _CarteiraBalcaoScreenState extends State<CarteiraBalcaoScreen> {
   }
 
   Widget _buildCircularAction(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          width: 55,
-          height: 55,
-          decoration: const BoxDecoration(
-            color: Color(0xFFF2F2F2),
-            shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: () => _onActionTap(label),
+      child: Column(
+        children: [
+          Container(
+            width: 55,
+            height: 55,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF2F2F2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.black, size: 24),
           ),
-          child: Icon(icon, color: Colors.black, size: 24),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black87),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -184,7 +229,13 @@ class _CarteiraBalcaoScreenState extends State<CarteiraBalcaoScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  item['title'],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
                 Text(
                   'To: 0x18dcc0e...e2bf7c64...',
                   style: TextStyle(color: Colors.grey[500], fontSize: 12),
@@ -224,16 +275,33 @@ class _CarteiraBalcaoScreenState extends State<CarteiraBalcaoScreen> {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.account_balance_wallet, color: Colors.white, size: 20),
+                  Icon(
+                    Icons.account_balance_wallet,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   SizedBox(width: 8),
-                  Text('Balcão', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Balcão',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const CircleAvatar(
-              radius: 14,
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.person_outline, color: Colors.white, size: 20),
+            GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/profile-security'),
+              child: const CircleAvatar(
+                radius: 14,
+                backgroundColor: Colors.white24,
+                child: Icon(
+                  Icons.person_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
             ),
           ],
         ),
