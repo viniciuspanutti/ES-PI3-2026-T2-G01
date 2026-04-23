@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../home/components/fazer_login.dart';
+import '../../../home/components/btn_login.dart';
 
 class MfaScreen extends StatefulWidget {
   const MfaScreen({super.key});
@@ -105,7 +105,7 @@ class _MfaScreenState extends State<MfaScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFE0E0E0),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: roxoMescla.withOpacity(0.2)),
+        border: Border.all(color: roxoMescla.withValues(alpha: 0.2)),
       ),
       child: TextField(
         controller: _controllers[index],
