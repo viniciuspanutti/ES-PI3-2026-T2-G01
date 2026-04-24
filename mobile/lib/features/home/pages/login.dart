@@ -14,155 +14,161 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final usernameController = TextEditingController();
-
   final passwordController = TextEditingController();
 
-  // nao vai fazer nada por agora pq ta sem tela do menu principal
   void loginUser() {}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea( // safearea faz com que o icone nao fique na area da bateria ou do wifi ou coisa do tipo
-        child: Center( // como o nome diz centraliza no meio
-          child: Column(
-            children: [
-
-              SetaVoltar(
-                ontap: () {
-                  Navigator.pushNamed(context, '/menu');
-                }
-              ),
-
-              Divider(
-                thickness: 0.5,
-                color: Colors.grey[400],
-              ),
-
-              SizedBox(height: 10,),
-
-              Text(
-                'Fazer o Login',
-                style: GoogleFonts.lora(
-                  fontSize: 30,
-                  color: Colors.purple[900],
+      // Redimensiona o conteúdo automaticamente quando o teclado aparece
+      resizeToAvoidBottomInset: true, 
+      body: SafeArea(
+        child: SingleChildScrollView( // Permite rolar a tela e evita a barra amarela de overflow
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20.0),
+            child: Column(
+              children: [
+                SetaVoltar(
+                  ontap: () {
+                    Navigator.pushNamed(context, '/menu');
+                  }
                 ),
-              ),
 
-              SizedBox(height: 20,),
+                Divider(
+                  thickness: 0.5,
+                  color: Colors.grey[400],
+                ),
 
-              Image.asset('lib/features/home/images/perfil.png'),
+                const SizedBox(height: 10,),
 
-              SizedBox(height: 50,),
-
-              Row(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(left: 30, bottom: 10), 
-                    child: Text(
-                      'E-mail',
-                      style: GoogleFonts.lora(
-                        fontSize: 20,
-                      ),
-                      ),
+                Text(
+                  'Fazer o Login',
+                  style: GoogleFonts.lora(
+                    fontSize: 30,
+                    color: Colors.purple[900],
                   ),
-                ],
-              ),
+                ),
 
-              CampoDeTexto(
-                controller: usernameController,
-                hintText: 'Minhaconta@gmail.com',
-                obscureText: false,
-              ),
+                const SizedBox(height: 20,),
 
-              SizedBox(height: 10,),
+                Image.asset(
+                  'lib/features/home/images/perfil.png',
+                  height: 120, // Altura fixa para ajudar no layout
+                ),
 
-              Row(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(left: 30, bottom: 10), 
-                    child: Text(
-                      'Senha',
-                      style: GoogleFonts.lora(
-                        fontSize: 20,
-                      ),
-                      ),
-                  ),
-                ],
-              ),
+                const SizedBox(height: 30,),
 
-              CampoDeTexto(
-                controller: passwordController,
-                hintText: 'Senha',
-                obscureText: true,
-              ),
-
-              SizedBox(height: 30,),
-
-              MudarSenha(
-                onTap: () {
-                  Navigator.pushNamed(context, '/recuperarsenha');
-                }
-              ),
-
-              SizedBox(height: 50,),
-
-              Row(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(left: 30),
-                    child: Image.asset(
-                      'lib/features/home/images/Checkmark.png',
+                Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 30, bottom: 10), 
+                      child: Text(
+                        'E-mail',
+                        style: GoogleFonts.lora(
+                          fontSize: 20,
+                        ),
+                        ),
                     ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(left: 10),
-                    child: Text(
-                      'Lembrar de mim',
-                      style: GoogleFonts.lora(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                  ],
+                ),
+
+                CampoDeTexto(
+                  controller: usernameController,
+                  hintText: 'Minhaconta@gmail.com',
+                  obscureText: false,
+                ),
+
+                const SizedBox(height: 10,),
+
+                Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 30, bottom: 10), 
+                      child: Text(
+                        'Senha',
+                        style: GoogleFonts.lora(
+                          fontSize: 20,
+                        ),
+                        ),
+                    ),
+                  ],
+                ),
+
+                CampoDeTexto(
+                  controller: passwordController,
+                  hintText: 'Senha',
+                  obscureText: true,
+                ),
+
+                const SizedBox(height: 30,),
+
+                MudarSenha(
+                  onTap: () {
+                    Navigator.pushNamed(context, '/recuperarsenha');
+                  }
+                ),
+
+                const SizedBox(height: 30,),
+
+                Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 30),
+                      child: Image.asset(
+                        'lib/features/home/images/Checkmark.png',
+                        width: 25,
                       ),
                     ),
-                  )
-                ],
-              ),
-
-              SizedBox(height: 30,),
-
-              Divider(
-                thickness: 0.5,
-                color: Colors.grey[400],
-              ),
-
-              SizedBox(height: 20,),
-
-              Text.rich(
-                TextSpan(
-                  text: 'Não tenho cadastro. ',
-                  style: TextStyle(
-                    color: Colors.black
-                  ),
-                children: [
-                  TextSpan(
-                    text: 'Cadastrar',
-                    style: TextStyle(
-                      color: Colors.blue[600],
-                      fontWeight: FontWeight.bold,
+                    Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: Text(
+                        'Lembrar de mim',
+                        style: GoogleFonts.lora(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     )
+                  ],
+                ),
+
+                const SizedBox(height: 30,),
+
+                Divider(
+                  thickness: 0.5,
+                  color: Colors.grey[400],
+                ),
+
+                const SizedBox(height: 20,),
+
+                Text.rich(
+                  TextSpan(
+                    text: 'Não tenho cadastro. ',
+                    style: const TextStyle(
+                      color: Colors.black
+                    ),
+                  children: [
+                    TextSpan(
+                      text: 'Cadastrar',
+                      style: TextStyle(
+                        color: Colors.blue[600],
+                        fontWeight: FontWeight.bold,
+                      )
+                    )
+                  ]
                   )
-                ]
+                ),
+
+                const SizedBox(height: 30,),
+
+                BotaoLogin(
+                  onTap: loginUser,
                 )
-              ),
-
-              SizedBox(height: 30,),
-
-              BotaoLogin(
-                onTap: loginUser,
-              )
-              
-          ],),
+                
+            ],),
+          ),
         ),
       ),
     );

@@ -1,68 +1,56 @@
-import 'package:cloud_functions/cloud_functions.dart';
+// ── startup_service.dart ──────────────────────────────────────────────
+// SUBSTITUIÇÃO DO MOCK: este arquivo agora conecta diretamente ao
+// Firestore em vez de consumir dados estáticos do startup_mock.dart.
+// ──────────────────────────────────────────────────────────────────────
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/startup.dart';
 
 class StartupService {
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Busca a lista de startups no catálogo
-  Future<List<StartupListItem>> listStartups({
-    String? stage,
-    String? search,
-  }) async {
+  /// Referência à coleção "startups" no Firestore.
+  CollectionReference get _startupsRef => _firestore.collection('startups');
+
+  // ────────────────────────────────────────────────────────────────────
+  // getStartups()
+  // Busca TODOS os documentos da coleção e mapeia para StartupDetail.
+  // Campos nulos (videoUrl, executiveSummary, etc.) são tratados com
+  // valores padrão no fromJson do domínio.
+  // ────────────────────────────────────────────────────────────────────
+  Future<List<StartupDetail>> getStartups() async {
     try {
-      final callable = _functions.httpsCallable('listStartups');
-      final response = await callable.call({
-        'stage': ?stage,
-        'search': ?search,
-      });
+      final QuerySnapshot snapshot = await _startupsRef.get();
 
-      final List<dynamic> data = response.data['data'];
-      return data
-          .map(
-            (item) => StartupListItem.fromJson(Map<String, dynamic>.from(item)),
-          )
-          .toList();
-    } on FirebaseFunctionsException catch (e) {
-      throw Exception('Erro do Firebase [${e.code}]: ${e.message}');
+      return snapshot.docs.map((doc) {
+        // Combina o ID do documento com os campos do mapa
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return StartupDetail.fromJson(data);
+      }).toList();
     } catch (e) {
-      throw Exception('Erro inesperado ao listar startups: $e');
+      throw Exception('Erro ao buscar startups do Firestore: $e');
     }
   }
 
-  /// Busca os detalhes profundos de uma startup específica
+  // ────────────────────────────────────────────────────────────────────
+  // getStartupDetails(id)
+  // Busca um único documento pelo ID para a tela de detalhes, caso
+  // seja necessário um refresh isolado no futuro.
+  // ────────────────────────────────────────────────────────────────────
   Future<StartupDetail> getStartupDetails(String id) async {
     try {
-      final callable = _functions.httpsCallable('getStartupDetails');
-      final response = await callable.call({'id': id});
+      final DocumentSnapshot doc = await _startupsRef.doc(id).get();
 
-      final Map<String, dynamic> data = Map<String, dynamic>.from(
-        response.data['data'],
-      );
+      if (!doc.exists) {
+        throw Exception('Startup com id "$id" não encontrada.');
+      }
+
+      final data = doc.data() as Map<String, dynamic>;
+      data['id'] = doc.id;
       return StartupDetail.fromJson(data);
-    } on FirebaseFunctionsException catch (e) {
-      throw Exception('Erro do Firebase [${e.code}]: ${e.message}');
     } catch (e) {
-      throw Exception('Erro inesperado ao buscar detalhes: $e');
-    }
-  }
-
-  /// Envia uma pergunta para a startup
-  Future<void> createStartupQuestion({
-    required String startupId,
-    required String text,
-    required String visibility,
-  }) async {
-    try {
-      final callable = _functions.httpsCallable('createStartupQuestion');
-      await callable.call({
-        'startupId': startupId,
-        'text': text,
-        'visibility': visibility,
-      });
-    } on FirebaseFunctionsException catch (e) {
-      throw Exception('Erro do Firebase [${e.code}]: ${e.message}');
-    } catch (e) {
-      throw Exception('Erro ao enviar pergunta: $e');
+      throw Exception('Erro ao buscar detalhes da startup: $e');
     }
   }
 }

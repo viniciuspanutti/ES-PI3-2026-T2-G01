@@ -1,31 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:mobile/features/home/pages/email_enviado.dart';
+import 'package:mobile/features/home/pages/home.dart';
+import 'package:mobile/features/home/pages/login.dart';
+import 'package:mobile/features/home/pages/rec_senha.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inicializa o Firebase. Se você ainda não configurou o google-services.json,
-  // remova estas linhas ou configure o projeto no console do Firebase.
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    debugPrint("Erro ao inicializar Firebase (pode ser falta de configuração): $e");
-  }
-
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
+//lib/features/home/images/cartao.png
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MesclaInvest',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF512DA8)),
-        useMaterial3: true,
-      ),
+      home: const PaginaInicial(),
+      routes: {
+        '/menu': (context) => const PaginaInicial(),
+        '/login': (context) => const LoginPage(),
+        '/recuperarsenha': (context) => const RecuperarSenha(),
+        '/emailenviado': (context) => const EmailEnviado(),
+      },
     );
   }
 }

@@ -1,5 +1,5 @@
 // feito por camila fernandes costacurta RA:25012949 
-import 'app_storage.dart';
+import 'storage.dart';
 
 class AuthService {
   static Future<void> register({

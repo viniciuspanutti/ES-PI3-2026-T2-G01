@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'app_storage.dart';
+import 'storage.dart';
 
 class BalcaoNegociacaoPage extends StatefulWidget {
   const BalcaoNegociacaoPage({super.key});

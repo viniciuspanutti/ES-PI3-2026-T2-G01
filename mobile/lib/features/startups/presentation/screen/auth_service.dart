@@ -1,7 +1,7 @@
 // feito por camila fernandes costacurta RA:25012949 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../home/components/btn_login.dart';
+import '../../../home/componentes/btn_login.dart';
 
 class MfaScreen extends StatefulWidget {
   const MfaScreen({super.key});

@@ -1,7 +1,7 @@
 // feito por camila fernandes costacurta RA:25012949 
 import 'package:flutter/material.dart';
 
-import 'app_storage.dart';
+import 'storage.dart';
 
 class ProfileSecurityScreen extends StatefulWidget {
   const ProfileSecurityScreen({super.key});
