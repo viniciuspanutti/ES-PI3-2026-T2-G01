@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/features/auth/data/auth_service.dart';
+import 'package:mobile/features/startups/presentation/screen/list/catalogo_de_startups.dart';
 
 const _brandPurple = Color(0xFF5A3296);
-const _outerBackground = Color(0xFFD9D9D9);
 const _dividerColor = Color(0xFFE6E1E1);
 const _fieldBackground = Color(0xFFF9F8F8);
 const _fieldHintColor = Color(0xFFB9B1B1);
@@ -10,31 +11,10 @@ const _focusedBorderColor = Color(0x335A3296);
 const _headingFontFamily = 'MarcellusSC';
 const _serifFontFamily = 'Marcellus';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Cadastro',
-      theme: ThemeData(
-        useMaterial3: false,
-        colorScheme: ColorScheme.fromSeed(seedColor: _brandPurple),
-        scaffoldBackgroundColor: _outerBackground,
-        textSelectionTheme: const TextSelectionThemeData(
-          cursorColor: _brandPurple,
-          selectionHandleColor: _brandPurple,
-        ),
-      ),
-      home: const SignUpPage(),
-    );
-  }
-}
+// ── REMOVIDO: main() e MyApp duplicados ──────────────────────────────
+// O entrypoint real do app está em lib/main.dart.
+// Este arquivo agora exporta apenas o widget SignUpPage.
+// ─────────────────────────────────────────────────────────────────────
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -45,6 +25,81 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   bool _obscurePassword = true;
+
+  // ── INTEGRAÇÃO FIREBASE AUTH ───────────────────────────────────────
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+
+  // Controllers para capturar os dados do formulário
+  final _nomeController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _cpfController = TextEditingController();
+  final _telefoneController = TextEditingController();
+  final _senhaController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _emailController.dispose();
+    _cpfController.dispose();
+    _telefoneController.dispose();
+    _senhaController.dispose();
+    super.dispose();
+  }
+
+  /// Conecta o botão "Concluir o Cadastro" ao Firebase Auth.
+  Future<void> _concluirCadastro() async {
+    final email = _emailController.text.trim();
+    final senha = _senhaController.text;
+    final nome = _nomeController.text.trim();
+
+    // Validação local rápida
+    if (nome.isEmpty || email.isEmpty || senha.isEmpty) {
+      _showError('Preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final credential = await _authService.signUpWithEmailAndPassword(
+        email: email,
+        password: senha,
+      );
+
+      // Atualiza o displayName com o nome informado
+      await credential.user?.updateDisplayName(nome);
+
+      if (!mounted) return;
+
+      // ── Navegação pós-cadastro ─────────────────────────────────────
+      // Vai direto ao catálogo, removendo toda a pilha de navegação.
+      // ──────────────────────────────────────────────────────────────
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const CatalogoStartupsPage(),
+        ),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showError(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+  // ── FIM DA INTEGRAÇÃO ──────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -110,32 +165,37 @@ class _SignUpPageState extends State<SignUpPage> {
                                 ),
                               ),
                               const SizedBox(height: 34),
-                              const PrototypeField(
+                              // ── Campos agora com controllers ──────
+                              PrototypeField(
                                 label: 'Nome Completo',
                                 hintText: 'Jualino Correia Silva',
                                 prefixIcon: Icons.person_outline_rounded,
                                 keyboardType: TextInputType.name,
+                                controller: _nomeController,
                               ),
                               const SizedBox(height: 18),
-                              const PrototypeField(
+                              PrototypeField(
                                 label: 'E-mail',
                                 hintText: 'minhaconta@gmail.com',
                                 prefixIcon: Icons.mail_outline_rounded,
                                 keyboardType: TextInputType.emailAddress,
+                                controller: _emailController,
                               ),
                               const SizedBox(height: 18),
-                              const PrototypeField(
+                              PrototypeField(
                                 label: 'CPF',
                                 hintText: '230.432.632-74',
                                 prefixIcon: Icons.badge_outlined,
                                 keyboardType: TextInputType.number,
+                                controller: _cpfController,
                               ),
                               const SizedBox(height: 18),
-                              const PrototypeField(
+                              PrototypeField(
                                 label: 'Telefone Celular',
                                 hintText: '(19) 64232-8473',
                                 prefixIcon: Icons.phone_android_rounded,
                                 keyboardType: TextInputType.phone,
+                                controller: _telefoneController,
                               ),
                               const SizedBox(height: 18),
                               PrototypeField(
@@ -143,6 +203,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                 hintText: 'Senha',
                                 prefixIcon: Icons.lock_outline_rounded,
                                 obscureText: _obscurePassword,
+                                controller: _senhaController,
                                 suffixIcon: IconButton(
                                   onPressed: () {
                                     setState(() {
@@ -178,26 +239,33 @@ class _SignUpPageState extends State<SignUpPage> {
                         child: SizedBox(
                           width: double.infinity,
                           height: 44,
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _brandPurple,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                            ),
-                            child: const Text(
-                              'Concluir o Cadastro',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18.5,
-                                fontWeight: FontWeight.w400,
-                                height: 1.0,
-                                fontFamily: _serifFontFamily,
-                              ),
-                            ),
-                          ),
+                          // ── BOTÃO COM ESTADO DE CARREGAMENTO ───────
+                          child: _isLoading
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: _brandPurple,
+                                  ),
+                                )
+                              : ElevatedButton(
+                                  onPressed: _concluirCadastro,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _brandPurple,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Concluir o Cadastro',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18.5,
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.0,
+                                      fontFamily: _serifFontFamily,
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
                     ],
@@ -221,6 +289,7 @@ class PrototypeField extends StatelessWidget {
     this.keyboardType,
     this.obscureText = false,
     this.suffixIcon,
+    this.controller,
   });
 
   final String label;
@@ -229,6 +298,7 @@ class PrototypeField extends StatelessWidget {
   final TextInputType? keyboardType;
   final bool obscureText;
   final Widget? suffixIcon;
+  final TextEditingController? controller;
 
   @override
   Widget build(BuildContext context) {
@@ -247,6 +317,7 @@ class PrototypeField extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         TextField(
+          controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
           style: const TextStyle(

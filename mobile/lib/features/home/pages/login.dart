@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/features/auth/data/auth_service.dart';
 import 'package:mobile/features/home/componentes/btn_home.dart';
 import 'package:mobile/features/home/componentes/btn_login_senha.dart';
 import 'package:mobile/features/home/componentes/campo_de_texto.dart';
 import 'package:mobile/features/home/componentes/seta_voltar.dart';
+import 'package:mobile/features/startups/presentation/screen/list/catalogo_de_startups.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,7 +18,68 @@ class _LoginPageState extends State<LoginPage> {
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
 
-  void loginUser() {}
+  // ── INTEGRAÇÃO FIREBASE AUTH ───────────────────────────────────────
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    usernameController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  /// Conecta o botão de login ao Firebase Auth.
+  /// Em caso de sucesso, redireciona ao catálogo e impede o botão "Voltar".
+  Future<void> loginUser() async {
+    final email = usernameController.text.trim();
+    final password = passwordController.text;
+
+    // Validação local rápida
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Preencha todos os campos.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _authService.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      // ── Navegação pós-login ────────────────────────────────────────
+      // pushAndRemoveUntil remove toda a pilha de telas anteriores,
+      // impedindo que o botão "Voltar" do Android retorne ao login.
+      // ──────────────────────────────────────────────────────────────
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const CatalogoStartupsPage(),
+        ),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showError(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+  // ── FIM DA INTEGRAÇÃO ──────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +95,7 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 SetaVoltar(
                   ontap: () {
-                    Navigator.pushNamed(context, '/menu');
+                    Navigator.maybePop(context);
                   }
                 ),
 
@@ -143,29 +206,45 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 20,),
 
-                Text.rich(
-                  TextSpan(
-                    text: 'Não tenho cadastro. ',
-                    style: const TextStyle(
-                      color: Colors.black
-                    ),
-                  children: [
+                GestureDetector(
+                  onTap: () {
+                    // ── Navega para a tela de cadastro ──────────────
+                    Navigator.pushNamed(context, '/cadastro');
+                  },
+                  child: Text.rich(
                     TextSpan(
-                      text: 'Cadastrar',
-                      style: TextStyle(
-                        color: Colors.blue[600],
-                        fontWeight: FontWeight.bold,
+                      text: 'Não tenho cadastro. ',
+                      style: const TextStyle(
+                        color: Colors.black
+                      ),
+                    children: [
+                      TextSpan(
+                        text: 'Cadastrar',
+                        style: TextStyle(
+                          color: Colors.blue[600],
+                          fontWeight: FontWeight.bold,
+                        )
                       )
+                    ]
                     )
-                  ]
-                  )
+                  ),
                 ),
 
                 const SizedBox(height: 30,),
 
-                BotaoLogin(
-                  onTap: loginUser,
-                )
+                // ── BOTÃO DE LOGIN COM ESTADO DE CARREGAMENTO ────────
+                // Enquanto processa, mostra spinner no lugar do botão.
+                // ─────────────────────────────────────────────────────
+                _isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 15),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF512DA8),
+                        ),
+                      )
+                    : BotaoLogin(
+                        onTap: loginUser,
+                      ),
                 
             ],),
           ),

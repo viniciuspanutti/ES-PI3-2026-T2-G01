@@ -19,11 +19,11 @@ class _PaginaInicialState extends State<PaginaInicial> {
         child: Center(
           child: Column(
             children: [
-              SizedBox(height: 130,),
+              SizedBox(height: 130),
 
               Image.asset('lib/features/home/images/cartao.png'),
 
-              SizedBox(height: 40,),
+              SizedBox(height: 40),
 
               Text(
                 'Começar a Investir',
@@ -33,41 +33,38 @@ class _PaginaInicialState extends State<PaginaInicial> {
                 ),
               ),
 
-              SizedBox(height: 10,),
+              SizedBox(height: 10),
 
               Padding(
                 padding: const EdgeInsets.only(left: 60, right: 60),
                 child: Text(
                   'Crie sua nova conta ou entre em uma conta já existente.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.lora(
-                    fontSize: 18,
-                    color: Colors.black,
-                  ),
+                  style: GoogleFonts.lora(fontSize: 18, color: Colors.black),
                 ),
               ),
 
-              SizedBox(height: 80,),
+              SizedBox(height: 80),
 
-              Divider(
-                thickness: 0.5,
-                color: Colors.grey[400],
-              ),
+              Divider(thickness: 0.5, color: Colors.grey[400]),
 
-              SizedBox(height: 20,),
+              SizedBox(height: 20),
 
+              // ── Navega para a tela de cadastro ─────────────────────
               BotaoCadastrar(
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(context, '/cadastro');
+                },
               ),
 
-              SizedBox(height: 20,),
+              SizedBox(height: 20),
 
+              // ── Navega para a tela de login ────────────────────────
               FazerLogin(
                 onTap: () {
                   Navigator.pushNamed(context, '/login');
-                }
+                },
               ),
-
             ],
           ),
         ),
