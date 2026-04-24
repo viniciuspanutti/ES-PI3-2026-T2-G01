@@ -1,4 +1,7 @@
-# NUNCA edite os arquivos dentro da pasta lib!
+#/*Vinícius
+#*Explicação do código ->
+#*/
+# NUNCA edite os arquivos dentro da pasta lib de functions!
 A pasta lib contém o código compilado. Ela é gerada e reescrita automaticamente pelo
 compilador do TypeScript toda vez que vocês fazem o build do projeto.
 Se você ou qualquer membro da sua equipe corrigir um bug ou adicionar uma

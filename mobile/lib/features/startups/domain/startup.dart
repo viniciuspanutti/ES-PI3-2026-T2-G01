@@ -39,36 +39,28 @@ class StartupListItem {
 class StartupDetail extends StartupListItem {
   final String description;
   final String executiveSummary;
-  final List<dynamic> founders;
-  final List<dynamic> publicQuestions;
+  final List<Map<String, String>> faq;
+  final String? videoUrl;
+  final List<Map<String, dynamic>> society;
   final Map<String, dynamic> access;
 
   StartupDetail({
-    required String id,
-    required String name,
-    required String stage,
-    required String shortDescription,
-    required int capitalRaisedCents,
-    required int totalTokensIssued,
-    required int currentTokenPriceCents,
-    String? coverImageUrl,
-    required List<String> tags,
+    required super.id,
+    required super.name,
+    required super.stage,
+    required super.shortDescription,
+    required super.capitalRaisedCents,
+    required super.totalTokensIssued,
+    required super.currentTokenPriceCents,
+    super.coverImageUrl,
+    required super.tags,
     required this.description,
     required this.executiveSummary,
-    required this.founders,
-    required this.publicQuestions,
+    required this.faq,
+    this.videoUrl,
+    required this.society,
     required this.access,
-  }) : super(
-          id: id,
-          name: name,
-          stage: stage,
-          shortDescription: shortDescription,
-          capitalRaisedCents: capitalRaisedCents,
-          totalTokensIssued: totalTokensIssued,
-          currentTokenPriceCents: currentTokenPriceCents,
-          coverImageUrl: coverImageUrl,
-          tags: tags,
-        );
+  });
 
   factory StartupDetail.fromJson(Map<String, dynamic> json) {
     return StartupDetail(
@@ -83,8 +75,17 @@ class StartupDetail extends StartupListItem {
       tags: List<String>.from(json['tags'] ?? []),
       description: json['description'] ?? '',
       executiveSummary: json['executiveSummary'] ?? '',
-      founders: json['founders'] ?? [],
-      publicQuestions: json['publicQuestions'] ?? [],
+      faq:
+          (json['faq'] as List?)
+              ?.map((item) => Map<String, String>.from(item))
+              .toList() ??
+          [],
+      videoUrl: json['videoUrl'],
+      society:
+          (json['society'] as List?)
+              ?.map((item) => Map<String, dynamic>.from(item))
+              .toList() ??
+          [],
       access: json['access'] ?? {},
     );
   }

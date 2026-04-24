@@ -1,3 +1,7 @@
+/**Vinícius
+ * Explicação do código ->
+ */
+
 export interface Wallet {
   balance: number; // Saldo em Reais (ex: 150.00)
   portfolio: {

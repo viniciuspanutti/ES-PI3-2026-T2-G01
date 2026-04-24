@@ -5,16 +5,23 @@ class StartupService {
   final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   /// Busca a lista de startups no catálogo
-  Future<List<StartupListItem>> listStartups({String? stage, String? search}) async {
+  Future<List<StartupListItem>> listStartups({
+    String? stage,
+    String? search,
+  }) async {
     try {
       final callable = _functions.httpsCallable('listStartups');
       final response = await callable.call({
-        if (stage != null) 'stage': stage,
-        if (search != null) 'search': search,
+        'stage': ?stage,
+        'search': ?search,
       });
 
       final List<dynamic> data = response.data['data'];
-      return data.map((item) => StartupListItem.fromJson(Map<String, dynamic>.from(item))).toList();
+      return data
+          .map(
+            (item) => StartupListItem.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .toList();
     } on FirebaseFunctionsException catch (e) {
       throw Exception('Erro do Firebase [${e.code}]: ${e.message}');
     } catch (e) {
@@ -28,7 +35,9 @@ class StartupService {
       final callable = _functions.httpsCallable('getStartupDetails');
       final response = await callable.call({'id': id});
 
-      final Map<String, dynamic> data = Map<String, dynamic>.from(response.data['data']);
+      final Map<String, dynamic> data = Map<String, dynamic>.from(
+        response.data['data'],
+      );
       return StartupDetail.fromJson(data);
     } on FirebaseFunctionsException catch (e) {
       throw Exception('Erro do Firebase [${e.code}]: ${e.message}');

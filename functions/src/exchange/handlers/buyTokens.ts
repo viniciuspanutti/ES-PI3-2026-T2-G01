@@ -24,7 +24,7 @@ export const buyTokens = functions.https.onCall(async (request) => {
       const startupSnap = await t.get(startupRef);
       if (!startupSnap.exists) throw new Error("Startup não encontrada.");
 
-      const price = startupSnap.data()?.currentTokenPrice; 
+      const price = startupSnap.data()?.currentTokenPrice;
       const totalCost = price * tokenQuantity;
 
       const walletSnap = await t.get(walletRef);

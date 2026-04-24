@@ -9,7 +9,7 @@ class AppTheme {
     colorScheme: ColorScheme.light(
       primary: AppColors.primary,
       secondary: AppColors.link,
-      background: AppColors.background,
+      surface: AppColors.background,
     ),
     textTheme: TextTheme(
       headlineLarge: AppTypography.heading1,
@@ -24,9 +24,7 @@ class AppTheme {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
         minimumSize: const Size(double.infinity, 52),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         textStyle: AppTypography.button,
       ),
     ),
