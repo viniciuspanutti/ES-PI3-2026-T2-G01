@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../data/startup_mock.dart';
-import '../../domain/startup.dart';
+import '../../../data/startup_mock.dart';
+import '../../../domain/startup.dart';
 import 'startup_detail_screen.dart';
 
 class CatalogoStartupsPage extends StatefulWidget {
