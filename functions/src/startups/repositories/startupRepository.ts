@@ -36,8 +36,8 @@ const demoStartups: any[] = [
       { name: "Sônia Alves", role: "Advisor de Mercado", organization: "Green Ventures" }
     ],
     demoVideos: ["https://www.youtube.com/watch?v=fbRFauzAjOM"],
-    coverImageUrl: "logotipoEcocycle.png",
-    headerImageUrl: "https://source.unsplash.com/featured/?cleantech",
+    coverImageUrl: "logotipoEcoCycle.png",
+    headerImageUrl: "https://plus.unsplash.com/premium_photo-1683133531613-6a7db8847c72?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8UmVjaWNsYWdlbSUyMGludGVsaWdlbnRlfGVufDB8fDB8fHww",
     tags: ["cleantech", "iot", "sustentabilidade"],
     faq: [
       { text: "Como a lixeira reconhece o lixo?", answer: "Usamos sensores infravermelhos e uma câmera ligada a um modelo de IA treinado para mais de 5.000 tipos de embalagens." },
@@ -64,7 +64,7 @@ const demoStartups: any[] = [
     externalMembers: [],
     demoVideos: ["https://www.youtube.com/watch?v=0sJVvYuw-bo"],
     coverImageUrl: "logotipoDevMatch.png",
-    headerImageUrl: "https://source.unsplash.com/featured/?hrtech",
+    headerImageUrl: "https://images.unsplash.com/photo-1733826544839-2282050204e6?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     tags: ["hrtech", "ia", "recrutamento"],
     faq: [
       { text: "Quais linguagens são suportadas?", answer: "Atualmente suportamos testes em Python, JavaScript, Java, C#, Go, Rust e Dart." },
@@ -94,7 +94,7 @@ const demoStartups: any[] = [
     ],
     demoVideos: ["https://www.youtube.com/watch?v=uMQX1sCtfa0"],
     coverImageUrl: "logotipoHealthBit.png",
-    headerImageUrl: "https://source.unsplash.com/featured/?healthtech",
+    headerImageUrl: "https://plus.unsplash.com/premium_photo-1726869610210-de13ad4cf226?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     tags: ["healthtech", "hardware", "medicina"],
     faq: [
       { text: "O anel é à prova d'água?", answer: "Sim, possui certificação IP68, podendo ser usado no banho e na piscina." },
@@ -121,7 +121,7 @@ const demoStartups: any[] = [
     externalMembers: [],
     demoVideos: ["https://www.youtube.com/watch?v=ErkxOEXa3YY"],
     coverImageUrl: "logotipoSmartCampus.png",
-    headerImageUrl: "https://source.unsplash.com/featured/?edtech",
+    headerImageUrl: "https://media.istockphoto.com/id/2261443769/pt/foto/women-searching-for-information-on-their-smartphones-women-exchanging-information.webp?a=1&b=1&s=612x612&w=0&k=20&c=KocsZOIzt8k90gPhKm3q3xcMLHY-5lMhqeAqF65A1hA=",
     tags: ["edtech", "iot", "greentech"],
     faq: [
       { text: "Funciona em prédios antigos?", answer: "Sim, usamos redes sem fio (LoRaWAN) que não exigem quebra de paredes para instalação." },
@@ -150,7 +150,7 @@ const demoStartups: any[] = [
     ],
     demoVideos: ["https://www.youtube.com/watch?v=_xRyePvaMqU&t=79s"],
     coverImageUrl: "logotipoAgriSense.png",
-    headerImageUrl: "https://source.unsplash.com/featured/?agrotech",
+    headerImageUrl: "https://media.istockphoto.com/id/1364083209/pt/foto/technology-in-the-field-digital-tablet.webp?a=1&b=1&s=612x612&w=0&k=20&c=NKzwPezghp4QdL2dJ3x5pbg_A0mxkzBV4Xuf6vIba5M=",
     tags: ["agrotech", "drones", "ia"],
     faq: [
       { text: "Os drones precisam de piloto?", answer: "Não, o voo é 100% autônomo baseado no mapeamento prévio da área." },
