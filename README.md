@@ -1,9 +1,8 @@
 # ES-PI3-2026-T2-G01
----
+
 ## MesclaInvest — Ecossistema Digital de Investimentos
 ### Repositório do Projeto Integrador III - Engenharia de Software (Turma 102)
 
----
 O projeto consiste no desenvolvimento de parte de um ecossistema digital de investimentos, baseado na negociação simulada de tokens que representam startups vinculadas ao Mescla — aceleradora de startups da PUC-Campinas.
 
 Nosso objetivo é criar uma plataforma com características de uma rede social corporativa, combinando um ambiente informativo e interativo voltado para investidores.
@@ -12,7 +11,6 @@ A fase de ideação da interface, mapeamento do projeto e desenvolvimento da exp
 
 O MesclaInvest será uma plataforma desenvolvida para o ecossistema de aceleração de startups da PUC-Campinas (Mescla). O sistema permite a navegação por um catálogo de startups, visualização de teses de investimento, vídeos de demonstração e interação via fórum de perguntas e respostas. O objetivo principal é simular um ambiente de rede social corporativa voltado para o mercado de capitais e inovação.
 
----
 
 ## Integrantes — Grupo 01
 
@@ -22,7 +20,6 @@ O MesclaInvest será uma plataforma desenvolvida para o ecossistema de aceleraç
 - Tom Hewtson Bean  
 - Vinícius Panutti Salgado (Líder)
 
----
 
 ## Tecnologias Utilizadas
 
@@ -82,5 +79,4 @@ flutter doctor
 # Inicie o aplicativo (certifique-se de ter um emulador ou dispositivo conectado)
 flutter run
 ```
----
 _Este projeto é um artefato acadêmico desenvolvido para a disciplina de Projeto Integrador III da PUC-Campinas._
