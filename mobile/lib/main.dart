@@ -1,30 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:mobile/features/home/pages/email_enviado.dart';
-import 'package:mobile/features/home/pages/home.dart';
-import 'package:mobile/features/home/pages/login.dart';
-import 'package:mobile/features/home/pages/rec_senha.dart';
+import 'package:mobile/core/routes/app_routes.dart';
+import 'package:mobile/home_screen.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(const MyApp());
+  runApp(const MesclaInvestApp());
 }
 
-//lib/features/home/images/cartao.png
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MesclaInvestApp extends StatelessWidget {
+  const MesclaInvestApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const PaginaInicial(),
+      theme: ThemeData(
+        useMaterial3: true,
+        fontFamily: 'SF Pro Text',
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF5A2D91),
+          brightness: Brightness.light,
+        ),
+      ),
+      home: const HomeScreen(),
       routes: {
-        '/menu': (context) => const PaginaInicial(),
-        '/login': (context) => const LoginPage(),
-        '/recuperarsenha': (context) => const RecuperarSenha(),
-        '/emailenviado': (context) => const EmailEnviado(),
+        ...AppRoutes.routes,
+        AppRoutes.home: (_) => const HomeScreen(),
+        AppRoutes.menu: (_) => const HomeScreen(),
       },
     );
   }
