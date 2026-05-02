@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart'; // Importa a biblioteca visual base do Flutter.
 import '../../data/exchange_service.dart'; // Ajuste o 'seu_projeto'
+import '../../data/simple_transaction_service.dart'; // Serviço simples de transações
+import 'package:mobile/core/routes/app_routes.dart';
 
 class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um componente que não muda de estado.
   
@@ -67,10 +69,66 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
                     }
                   },
                 ), 
+                _buildCircularAction(
+                  icon: Icons.trending_down, 
+                  label: 'Vender',
+                  onTap: () {
+                    // Simplesmente mostra um diálogo de confirmação
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Vender Tokens'),
+                        content: const Text('Funcionalidade de venda em desenvolvimento.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
                 _buildCircularAction(icon: Icons.swap_horiz, label: 'Trocar', onTap: () {}), // Botão para ação de permuta.
                 _buildCircularAction(icon: Icons.send, label: 'Enviar', onTap: () {}), 
-                _buildCircularAction(icon: Icons.file_download, label: 'Receber', onTap: () {}), 
               ],
+            ),
+
+            const SizedBox(height: 40),
+
+            // Acesso rápido a funcionalidades
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 25.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Acesso Rápido', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickAccessButton(
+                          context,
+                          'Dashboard',
+                          Icons.trending_up,
+                          Colors.blue,
+                          () => Navigator.pushNamed(context, AppRoutes.dashboard),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickAccessButton(
+                          context,
+                          'Histórico',
+                          Icons.history,
+                          Colors.green,
+                          () => Navigator.pushNamed(context, AppRoutes.historico),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 40),
@@ -80,7 +138,23 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start, // Alinha o título "Hoje" à esquerda.
                 children: [
-                  const Text('Hoje', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), // Título da seção de histórico.
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Hoje', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), // Título da seção de histórico.
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, AppRoutes.historico),
+                        child: Text(
+                          'Ver tudo',
+                          style: TextStyle(
+                            color: roxoMescla,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 20),
                   _buildTransactionTile('Transferencia', 'To: 0x38dc...b037', '93 BYD', Icons.send, Colors.greenAccent), // Item de transferência enviada.
                   _buildTransactionTile('Compra', 'To: 0x7131...8b6a', '23.4 BYD', Icons.shopping_cart, Colors.greenAccent), // Item de compra realizada.
@@ -92,7 +166,7 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(roxoMescla), // Chama a barra de navegação customizada no rodapé.
+      bottomNavigationBar: _buildBottomNav(context, roxoMescla), // Chama a barra de navegação customizada no rodapé.
     );
   }
 
@@ -113,6 +187,165 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
           ),
           const SizedBox(height: 8),
           Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)), 
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAccessButton(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBalanceCard(Color roxoMescla) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 25),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: roxoMescla,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: roxoMescla.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Saldo Disponível',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'R\$ 1.500,00',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, Color roxoMescla) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 25),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildCircularAction(
+            icon: Icons.show_chart,
+            label: 'Comprar',
+            onTap: () async {
+              // Simulação de compra simples conforme escopo
+              SimpleTransactionService().addTransaction(
+                type: 'COMPRA',
+                amount: '10', // Quantidade fixa para simplicidade
+                price: 5.95, // Preço simulado
+              );
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Compra de 10 BYD registrada!'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+          _buildCircularAction(
+            icon: Icons.trending_down,
+            label: 'Vender',
+            onTap: () {
+              final controller = TextEditingController();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Vender Tokens BYD'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Quantidade de BYD para vender:'),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: controller,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: 'Quantidade',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        final quantidade = controller.text;
+                        if (quantidade.isNotEmpty) {
+                          // Registrar venda no histórico usando o serviço simples
+                          SimpleTransactionService().addTransaction(
+                            type: 'VENDA',
+                            amount: quantidade,
+                            price: 6.09, // Preço de venda simulado
+                          );
+                          
+                          Navigator.pop(context);
+                          
+                          // Mostrar confirmação
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Venda de $quantidade BYD registrada!'),
+                              backgroundColor: Colors.green,
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Vender'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          _buildCircularAction(icon: Icons.swap_horiz, label: 'Trocar', onTap: () {}),
+          _buildCircularAction(icon: Icons.send, label: 'Enviar', onTap: () {}),
         ],
       ),
     );
@@ -140,7 +373,8 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
     );
   }
 
-  Widget _buildBottomNav(Color activeColor) { // Função que constrói a barra de navegação flutuante e escura.
+  
+  Widget _buildBottomNav(BuildContext context, Color activeColor) { // Função que constrói a barra de navegação flutuante e escura.
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 20), // Define as margens para a barra não encostar nas bordas.
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -151,9 +385,15 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween, // Espaça os ícones do menu igualmente.
         children: [
-          const Icon(Icons.home_filled, color: Colors.white70), // Ícone da página inicial.
-          const Icon(Icons.search, color: Colors.white70), // Ícone de busca.
-          Container( // Widget que destaca o botão da aba atual (Balcão).
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, AppRoutes.catalogo),
+            child: const Icon(Icons.home_filled, color: Colors.white70), // Ícone da página inicial.
+          ),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, AppRoutes.balcao),
+            child: const Icon(Icons.account_balance, color: Colors.white70), // Ícone do balcão.
+          ),
+          Container( // Widget que destaca o botão da aba atual (Carteira).
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
             decoration: BoxDecoration(
               color: activeColor,
@@ -163,11 +403,14 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
               children: [
                 Icon(Icons.account_balance_wallet, color: Colors.white, size: 20), // Ícone de carteira.
                 SizedBox(width: 8),
-                Text('Balcão', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), // Texto da aba ativa.
+                Text('Carteira', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), // Texto da aba ativa.
               ],
             ),
           ),
-          const Icon(Icons.person_outline, color: Colors.white70), // Ícone de perfil de usuário.
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, AppRoutes.historico),
+            child: const Icon(Icons.history, color: Colors.white70), // Ícone de histórico.
+          ),
         ],
       ),
     );
