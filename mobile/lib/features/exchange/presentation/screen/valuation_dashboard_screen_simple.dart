@@ -69,31 +69,36 @@ class _ValuationDashboardScreenState extends State<ValuationDashboardScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadValuationData,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Seletores
-                    _buildSelectors(),
-                    const SizedBox(height: 24),
+              child: ValueListenableBuilder<List<Map<String, dynamic>>>(
+                valueListenable: _transactionService.transactionsNotifier,
+                builder: (context, transactions, child) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Seletores
+                        _buildSelectors(),
+                        const SizedBox(height: 24),
 
-                    // Estatísticas principais
-                    _buildMainStatistics(),
-                    const SizedBox(height: 24),
+                        // Estatísticas principais (reativas)
+                        _buildMainStatistics(),
+                        const SizedBox(height: 24),
 
-                    // Gráfico de preços simplificado
-                    _buildSimplePriceChart(),
-                    const SizedBox(height: 24),
+                        // Gráfico de preços simplificado (reativo)
+                        _buildSimplePriceChart(),
+                        const SizedBox(height: 24),
 
-                    // Gráfico de volume simplificado
-                    _buildSimpleVolumeChart(),
-                    const SizedBox(height: 24),
+                        // Gráfico de volume simplificado (reativo)
+                        _buildSimpleVolumeChart(),
+                        const SizedBox(height: 24),
 
-                    // Estatísticas detalhadas
-                    _buildDetailedStatistics(),
-                  ],
-                ),
+                        // Estatísticas detalhadas (reativas)
+                        _buildDetailedStatistics(),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
     );

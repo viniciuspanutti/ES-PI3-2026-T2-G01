@@ -19,12 +19,12 @@ class SimpleTransactionService {
     final agora = DateTime.now();
     final transaction = {
       'id': agora.millisecondsSinceEpoch.toString(),
-      'type': type, // 'COMPRA' ou 'VENDA'
+      'type': type, // 'COMPRA', 'VENDA' ou 'TRANSFERENCIA'
       'amount': amount, // quantidade de tokens
       'timestamp': agora.toIso8601String(), // data e hora exata
       'status': 'COMPLETA',
       'price': price,
-      'total': (double.parse(amount) * price).toStringAsFixed(2),
+      'total': type == 'TRANSFERENCIA' ? price.toStringAsFixed(2) : (double.parse(amount) * price).toStringAsFixed(2),
     };
 
     _transactions.insert(0, transaction); // Adiciona no início (mais recente primeiro)

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/exchange_service.dart';
+import '../../data/simple_transaction_service.dart';
 
 class SellTokensDialog extends StatefulWidget {
   final String startupId;
@@ -61,6 +62,13 @@ class _SellTokensDialogState extends State<SellTokensDialog> {
         quantity,
         _sellType,
         desiredPrice,
+      );
+
+      // Registrar transação local para atualização em tempo real
+      SimpleTransactionService().addTransaction(
+        type: 'VENDA',
+        amount: quantity.toString(),
+        price: desiredPrice ?? widget.currentPrice,
       );
 
       if (mounted) {

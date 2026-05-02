@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/exchange_service.dart';
+import '../../data/simple_transaction_service.dart';
 
 class AddBalanceScreen extends StatefulWidget {
   const AddBalanceScreen({super.key});
@@ -48,6 +49,13 @@ class _AddBalanceScreenState extends State<AddBalanceScreen> {
       // Simulação
       await Future.delayed(const Duration(seconds: 2));
       
+      // Registrar transação local para atualização em tempo real
+      SimpleTransactionService().addTransaction(
+        type: 'TRANSFERENCIA', // Usando transferência para representar crédito
+        amount: '0', // Não é token, é saldo
+        price: amount,
+      );
+
       setState(() {
         _currentBalance += amount;
         _isLoading = false;

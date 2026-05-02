@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/exchange_service.dart';
+import '../../data/simple_transaction_service.dart';
 
 class TradingFloorScreen extends StatefulWidget {
   const TradingFloorScreen({super.key});
@@ -83,6 +84,14 @@ class _TradingFloorScreenState extends State<TradingFloorScreen> {
     try {
       // await _exchangeService.matchOrders(_selectedStartup, quantity, maxPrice);
       await Future.delayed(const Duration(seconds: 2)); // Simulação
+      
+      // Registrar transação local para atualização em tempo real
+      SimpleTransactionService().addTransaction(
+        type: 'COMPRA',
+        amount: quantity.toString(),
+        price: maxPrice,
+      );
+
       await _loadOrderBook();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -113,6 +122,14 @@ class _TradingFloorScreenState extends State<TradingFloorScreen> {
     try {
       // await _exchangeService.sellTokens(_selectedStartup, quantity, sellType, desiredPrice);
       await Future.delayed(const Duration(seconds: 2)); // Simulação
+      
+      // Registrar transação local para atualização em tempo real
+      SimpleTransactionService().addTransaction(
+        type: 'VENDA',
+        amount: quantity.toString(),
+        price: desiredPrice ?? _startupInfo?['currentTokenPrice'] ?? 0.0,
+      );
+
       await _loadOrderBook();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

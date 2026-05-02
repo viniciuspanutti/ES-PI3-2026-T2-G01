@@ -82,17 +82,39 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
               onRefresh: () async {
                 _initializeData();
               },
-              child: Column(
-                children: [
-                  // Estatísticas
-                  _buildStatistics(),
-                  const SizedBox(height: 16),
-                  
-                  // Lista de transações
-                  Expanded(
-                    child: _buildTransactionList(),
-                  ),
-                ],
+              child: ValueListenableBuilder<List<Map<String, dynamic>>>(
+                valueListenable: _transactionService.transactionsNotifier,
+                builder: (context, transactions, child) {
+                  return Column(
+                    children: [
+                      // Estatísticas (agora reativas)
+                      _buildStatistics(),
+                      const SizedBox(height: 16),
+                      
+                      // Lista de transações
+                      Expanded(
+                        child: transactions.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'Nenhuma transação encontrada',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: transactions.length,
+                                itemBuilder: (context, index) {
+                                  final transaction = transactions[index];
+                                  return _buildTransactionCard(transaction);
+                                },
+                              ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
     );
@@ -179,34 +201,6 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTransactionList() {
-    return ValueListenableBuilder<List<Map<String, dynamic>>>(
-      valueListenable: _transactionService.transactionsNotifier,
-      builder: (context, transactions, child) {
-        if (transactions.isEmpty) {
-          return const Center(
-            child: Text(
-              'Nenhuma transação encontrada',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: transactions.length,
-          itemBuilder: (context, index) {
-            final transaction = transactions[index];
-            return _buildTransactionCard(transaction);
-          },
-        );
-      },
     );
   }
 

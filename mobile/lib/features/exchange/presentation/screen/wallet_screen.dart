@@ -2,6 +2,7 @@ import 'package:flutter/material.dart'; // Importa a biblioteca visual base do F
 import '../../data/exchange_service.dart'; // Ajuste o 'seu_projeto'
 import '../../data/simple_transaction_service.dart'; // Serviço simples de transações
 import 'package:mobile/core/routes/app_routes.dart';
+import 'sell_dialog.dart';
 
 class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um componente que não muda de estado.
   
@@ -50,119 +51,152 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
 
             Row( 
               mainAxisAlignment: MainAxisAlignment.spaceEvenly, 
-              children: [
-                _buildCircularAction(
-                  icon: Icons.show_chart, 
-                  label: 'Comprar',
-                  onTap: () async {
-                    print("🔥 Botão pressionado! Iniciando comunicação com o backend...");
-                    try {
-                      // Pegue o ID real da DevMatch (ou a que você preferir do banco)
-                      String idDaStartup = '5bfozOLJ0a93No2wuWni'; 
-                      
-                      // Chama o nosso motor financeiro!
-                      await ExchangeService().buyTokens(idDaStartup, 10);
-                      
-                      print("✅ Sucesso! O backend autorizou a compra.");
-                    } catch (e) {
-                      print("❌ Erro retornado pelo backend: $e");
-                    }
-                  },
-                ), 
-                _buildCircularAction(
-                  icon: Icons.trending_down, 
-                  label: 'Vender',
-                  onTap: () {
-                    // Simplesmente mostra um diálogo de confirmação
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Vender Tokens'),
-                        content: const Text('Funcionalidade de venda em desenvolvimento.'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('OK'),
+                children: [
+                  _buildCircularAction(
+                    icon: Icons.show_chart, 
+                    label: 'Comprar',
+                    onTap: () async {
+                      print("🔥 Botão pressionado! Iniciando comunicação com o backend...");
+                      try {
+                        String idDaStartup = '5bfozOLJ0a93No2wuWni'; 
+                        int quantidade = 10;
+                        double precoSimulado = 6.09;
+                        
+                        await ExchangeService().buyTokens(idDaStartup, quantidade);
+                        
+                        // Registrar transação local para atualização em tempo real
+                        SimpleTransactionService().addTransaction(
+                          type: 'COMPRA',
+                          amount: quantidade.toString(),
+                          price: precoSimulado,
+                        );
+                        
+                        print("✅ Sucesso! O backend autorizou a compra.");
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Compra realizada com sucesso!'), backgroundColor: Colors.green),
+                          );
+                        }
+                      } catch (e) {
+                        print("❌ Erro retornado pelo backend: $e");
+                      }
+                    },
+                  ), 
+                  _buildCircularAction(
+                    icon: Icons.trending_down, 
+                    label: 'Vender',
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const SellTokensDialog(
+                          startupId: '5bfozOLJ0a93No2wuWni',
+                          startupName: 'BYD',
+                          ownedTokens: 345, // Simulação
+                          currentPrice: 6.09,
+                        ),
+                      );
+                    },
+                  ),
+                  _buildCircularAction(icon: Icons.swap_horiz, label: 'Trocar', onTap: () {}), 
+                  _buildCircularAction(icon: Icons.send, label: 'Enviar', onTap: () {}), 
+                ],
+              ),
+
+              const SizedBox(height: 40),
+
+              // Acesso rápido a funcionalidades
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Acesso Rápido', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildQuickAccessButton(
+                            context,
+                            'Dashboard',
+                            Icons.trending_up,
+                            Colors.blue,
+                            () => Navigator.pushNamed(context, AppRoutes.dashboard),
                           ),
-                        ],
-                      ),
-                    );
-                  },
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildQuickAccessButton(
+                            context,
+                            'Histórico',
+                            Icons.history,
+                            Colors.green,
+                            () => Navigator.pushNamed(context, AppRoutes.historico),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                _buildCircularAction(icon: Icons.swap_horiz, label: 'Trocar', onTap: () {}), // Botão para ação de permuta.
-                _buildCircularAction(icon: Icons.send, label: 'Enviar', onTap: () {}), 
-              ],
-            ),
-
-            const SizedBox(height: 40),
-
-            // Acesso rápido a funcionalidades
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Acesso Rápido', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildQuickAccessButton(
-                          context,
-                          'Dashboard',
-                          Icons.trending_up,
-                          Colors.blue,
-                          () => Navigator.pushNamed(context, AppRoutes.dashboard),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildQuickAccessButton(
-                          context,
-                          'Histórico',
-                          Icons.history,
-                          Colors.green,
-                          () => Navigator.pushNamed(context, AppRoutes.historico),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
-            ),
 
-            const SizedBox(height: 40),
+              const SizedBox(height: 40),
 
-            Padding( // Área do histórico de movimentações.
-              padding: const EdgeInsets.symmetric(horizontal: 25.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, // Alinha o título "Hoje" à esquerda.
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Hoje', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), // Título da seção de histórico.
-                      GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, AppRoutes.historico),
-                        child: Text(
-                          'Ver tudo',
-                          style: TextStyle(
-                            color: roxoMescla,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+              Padding( // Área do histórico de movimentações.
+                padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Hoje', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.historico),
+                          child: Text(
+                            'Ver tudo',
+                            style: TextStyle(
+                              color: roxoMescla,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  _buildTransactionTile('Transferencia', 'To: 0x38dc...b037', '93 BYD', Icons.send, Colors.greenAccent), // Item de transferência enviada.
-                  _buildTransactionTile('Compra', 'To: 0x7131...8b6a', '23.4 BYD', Icons.shopping_cart, Colors.greenAccent), // Item de compra realizada.
-                  _buildTransactionTile('Recebido', 'Address: 0x4d1e...c37C', '57 BYD', Icons.swap_vert, Colors.greenAccent), // Item de valor recebido.
-                  _buildTransactionTile('Recebido', 'To: 0x38dc...b037', '12.2 BYD', Icons.send, Colors.greenAccent), // Outro item de valor recebido.
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Lista de transações real e reativa
+                    ValueListenableBuilder<List<Map<String, dynamic>>>(
+                      valueListenable: SimpleTransactionService().transactionsNotifier,
+                      builder: (context, transactions, child) {
+                        if (transactions.isEmpty) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(20.0),
+                              child: Text('Nenhuma transação hoje', style: TextStyle(color: Colors.grey)),
+                            ),
+                          );
+                        }
+                        
+                        // Pegar as 4 transações mais recentes
+                        final recentTransactions = transactions.take(4).toList();
+                        
+                        return Column(
+                          children: recentTransactions.map((tx) {
+                            return _buildTransactionTile(
+                              tx['type'],
+                              tx['type'] == 'COMPRA' ? 'Compra de Tokens' : 'Venda de Tokens',
+                              '${tx['amount']} BYD',
+                              tx['type'] == 'COMPRA' ? Icons.shopping_cart : Icons.trending_down,
+                              tx['type'] == 'COMPRA' ? Colors.greenAccent : Colors.redAccent,
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),
