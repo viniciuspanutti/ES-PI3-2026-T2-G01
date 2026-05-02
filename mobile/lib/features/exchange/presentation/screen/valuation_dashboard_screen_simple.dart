@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../data/simple_transaction_service.dart';
 
 class ValuationDashboardScreen extends StatefulWidget {
@@ -10,194 +10,137 @@ class ValuationDashboardScreen extends StatefulWidget {
 }
 
 class _ValuationDashboardScreenState extends State<ValuationDashboardScreen> {
-  String _selectedStartup = '5bfozOLJ0a93No2wuWni'; // BYD
-  String _selectedPeriod = 'daily';
-  bool _isLoading = true;
+  String _selectedPeriod = 'MENSAL';
   final _transactionService = SimpleTransactionService();
+
+  // Cores personalizadas para um estilo "Deep Blue / Emerald" único
+  final Color primaryColor = const Color(0xFF0F172A); // Azul muito escuro (Slate 900)
+  final Color accentColor = const Color(0xFF10B981); // Verde Esmeralda vibrante
+  final Color cardColor = Colors.white;
+  final Color backgroundColor = const Color(0xFFF1F5F9); // Cinza azulado bem claro
 
   @override
   void initState() {
     super.initState();
-    _loadValuationData();
-    
-    // Inicializar dados se necessário
     if (_transactionService.transactions.isEmpty) {
       _transactionService.initializeSampleData();
     }
-    
-    // Escutar mudanças nas transações
-    _transactionService.transactionsNotifier.addListener(_updateValuationData);
-  }
-
-  @override
-  void dispose() {
-    _transactionService.transactionsNotifier.removeListener(_updateValuationData);
-    super.dispose();
-  }
-
-  void _updateValuationData() {
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _loadValuationData() async {
-    // Usar dados reais do serviço compartilhado
-    _updateValuationData();
-  }
-
-  String _formatDate(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    return DateFormat('dd/MM').format(date);
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color roxoMescla = Color(0xFF512DA8);
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Dashboard de Valorização'),
-        backgroundColor: roxoMescla,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.chevron_left, color: primaryColor, size: 30),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Minha Performance',
+          style: TextStyle(color: primaryColor, fontWeight: FontWeight.w800, fontSize: 20),
+        ),
+        centerTitle: true,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadValuationData,
-              child: ValueListenableBuilder<List<Map<String, dynamic>>>(
-                valueListenable: _transactionService.transactionsNotifier,
-                builder: (context, transactions, child) {
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Seletores
-                        _buildSelectors(),
-                        const SizedBox(height: 24),
-
-                        // Estatísticas principais (reativas)
-                        _buildMainStatistics(),
-                        const SizedBox(height: 24),
-
-                        // Gráfico de preços simplificado (reativo)
-                        _buildSimplePriceChart(),
-                        const SizedBox(height: 24),
-
-                        // Gráfico de volume simplificado (reativo)
-                        _buildSimpleVolumeChart(),
-                        const SizedBox(height: 24),
-
-                        // Estatísticas detalhadas (reativas)
-                        _buildDetailedStatistics(),
-                      ],
-                    ),
-                  );
-                },
-              ),
+      body: ValueListenableBuilder<List<Map<String, dynamic>>>(
+        valueListenable: _transactionService.transactionsNotifier,
+        builder: (context, transactions, child) {
+          final stats = _transactionService.getStatistics();
+          
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 10),
+                
+                // Card de Saldo com Design "Glassmorphism" simplificado
+                _buildModernBalanceCard(stats['totalVolume']),
+                
+                const SizedBox(height: 30),
+                
+                // Seção do Gráfico com bordas mais suaves e estilo "Neumorphism" leve
+                _buildEvolutionSection(transactions),
+                
+                const SizedBox(height: 30),
+                
+                // Grid de Estatísticas Rápidas
+                _buildQuickStatsGrid(stats),
+                
+                const SizedBox(height: 40),
+              ],
             ),
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildSelectors() {
+  Widget _buildModernBalanceCard(String total) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: primaryColor,
+        borderRadius: BorderRadius.circular(30),
+        image: DecorationImage(
+          image: const NetworkImage('https://www.transparenttextures.com/patterns/carbon-fibre.png'),
+          opacity: 0.05,
+          repeat: ImageRepeat.repeat,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: primaryColor.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Período',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildPeriodChip('Diário', 'daily'),
-              const SizedBox(width: 8),
-              _buildPeriodChip('Semanal', 'weekly'),
-              const SizedBox(width: 8),
-              _buildPeriodChip('Mensal', 'monthly'),
+              Text(
+                'VALOR TOTAL EM CUSTÓDIA',
+                style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.5),
+              ),
+              Icon(Icons.account_balance_wallet_outlined, color: accentColor, size: 20),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPeriodChip(String label, String value) {
-    final isSelected = _selectedPeriod == value;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() => _selectedPeriod = value);
-        _loadValuationData();
-      },
-      backgroundColor: Colors.grey[200],
-      selectedColor: const Color(0xFF512DA8).withOpacity(0.2),
-      labelStyle: TextStyle(
-        color: isSelected ? const Color(0xFF512DA8) : Colors.black,
-      ),
-    );
-  }
-
-  Widget _buildMainStatistics() {
-    final statistics = _transactionService.getStatistics();
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+          const SizedBox(height: 12),
+          Text(
+            'R\$ $total',
+            style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -0.5),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Estatísticas das Transações',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Preço Médio',
-                  'R\$ ${statistics['avgPrice'].toStringAsFixed(2)}',
-                  Icons.trending_up,
-                  Colors.blue,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: accentColor.withOpacity(0.5)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.arrow_upward, color: accentColor, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      '14.2%',
+                      style: TextStyle(color: accentColor, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  'Volume Total',
-                  'R\$ ${statistics['totalVolume']}',
-                  Icons.account_balance,
-                  Colors.green,
-                ),
+              Text(
+                'vs. mês anterior',
+                style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
               ),
             ],
           ),
@@ -206,52 +149,16 @@ class _ValuationDashboardScreenState extends State<ValuationDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildEvolutionSection(List<Map<String, dynamic>> transactions) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSimplePriceChart() {
-    final transactions = _transactionService.transactions;
-    return Container(
-      height: 300,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
             offset: const Offset(0, 4),
           ),
         ],
@@ -259,187 +166,158 @@ class _ValuationDashboardScreenState extends State<ValuationDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Histórico de Preços das Transações',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView.builder(
-              itemCount: transactions.length,
-              itemBuilder: (context, index) {
-                final transaction = transactions[index];
-                final isPositive = transaction['type'] == 'COMPRA';
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isPositive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            transaction['type'],
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isPositive ? Colors.green : Colors.red,
-                            ),
-                          ),
-                          Text(
-                            _formatDate(transaction['timestamp']),
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Icon(
-                            isPositive ? Icons.trending_up : Icons.trending_down,
-                            color: isPositive ? Colors.green : Colors.red,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'R\$ ${transaction['price'].toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isPositive ? Colors.green : Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSimpleVolumeChart() {
-    final transactions = _transactionService.transactions;
-    return Container(
-      height: 200,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Volume de Transações',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: Row(
-              children: transactions.map((transaction) {
-                final maxVolume = transactions.map((t) => double.parse(t['amount'])).reduce((a, b) => a > b ? a : b);
-                final height = (double.parse(transaction['amount']) / maxVolume) * 120;
-                return Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    height: height,
-                    decoration: BoxDecoration(
-                      color: transaction['type'] == 'COMPRA' ? Colors.green : Colors.red,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Center(
-                      child: Text(
-                        transaction['amount'],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailedStatistics() {
-    final statistics = _transactionService.getStatistics();
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Resumo das Transações',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: _buildDetailStat('Total Transações', '${statistics['totalTransactions']}'),
+              const Text(
+                'Evolução',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildDetailStat('Volume Total', 'R\$ ${statistics['totalVolume']}'),
-              ),
+              _buildSimplePeriodDropdown(),
             ],
+          ),
+          const SizedBox(height: 30),
+          SizedBox(
+            height: 220,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: Colors.grey.withOpacity(0.1),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        if (value % 5000 == 0) {
+                          return Text('${value ~/ 1000}k', style: TextStyle(color: Colors.grey[400], fontSize: 10));
+                        }
+                        return const SizedBox();
+                      },
+                      reservedSize: 30,
+                    ),
+                  ),
+                  bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                borderData: FlBorderData(show: false),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: _generateChartSpots(transactions),
+                    isCurved: true,
+                    curveSmoothness: 0.4,
+                    color: accentColor,
+                    barWidth: 4,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 4,
+                        color: Colors.white,
+                        strokeWidth: 3,
+                        strokeColor: accentColor,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [accentColor.withOpacity(0.15), accentColor.withOpacity(0.0)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailStat(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSimplePeriodDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Text(
+            _selectedPeriod,
+            style: TextStyle(color: primaryColor, fontSize: 11, fontWeight: FontWeight.bold),
+          ),
+          Icon(Icons.keyboard_arrow_down, color: primaryColor, size: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStatsGrid(Map<String, dynamic> stats) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.4,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        _buildMinimalStatCard('Transações', '${stats['totalTransactions']}', Icons.swap_vert, Colors.blue),
+        _buildMinimalStatCard('Preço Médio', 'R\$ ${stats['avgPrice'].toStringAsFixed(2)}', Icons.analytics_outlined, Colors.orange),
+        _buildMinimalStatCard('Volume', 'R\$ ${stats['totalVolume']}', Icons.pie_chart_outline, Colors.purple),
+        _buildMinimalStatCard('Status', 'Ativo', Icons.check_circle_outline, Colors.green),
       ],
     );
+  }
+
+  Widget _buildMinimalStatCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 8),
+          Text(label, style: TextStyle(color: Colors.grey[500], fontSize: 11, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
+          Text(value, style: TextStyle(color: primaryColor, fontSize: 15, fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+
+  List<FlSpot> _generateChartSpots(List<Map<String, dynamic>> transactions) {
+    if (transactions.isEmpty) return [const FlSpot(0, 4500), const FlSpot(7, 4500)];
+    double currentVolume = 4500;
+    List<FlSpot> spots = [FlSpot(0, currentVolume)];
+    for (int i = 0; i < transactions.length && i < 7; i++) {
+      final tx = transactions[transactions.length - 1 - i];
+      final amount = double.parse(tx['total']);
+      currentVolume += (tx['type'] == 'COMPRA' ? amount : -amount);
+      spots.add(FlSpot((i + 1).toDouble(), currentVolume));
+    }
+    while (spots.length <= 7) spots.add(FlSpot(spots.length.toDouble(), currentVolume));
+    return spots;
   }
 }

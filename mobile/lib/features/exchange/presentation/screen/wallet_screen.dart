@@ -11,8 +11,8 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
   @override
   Widget build(BuildContext context) { // Função principal que desenha a interface na tela.
     
-    const Color roxoMescla = Color(0xFF512DA8); // Define a cor roxa principal da identidade visual.
-    const Color fundoCinza = Color(0xFFF5F5F5); // Define a cor cinza clara para o fundo da página.
+    const Color roxoMescla = Color(0xFF6C5CE7); // Novo roxo mais moderno
+    const Color fundoCinza = Color(0xFFF8F9FE); // Fundo mais claro/azulado
 
     return Scaffold( // Estrutura base que organiza os elementos da tela.
       backgroundColor: fundoCinza, // Aplica a cor de fundo cinza em toda a tela.
@@ -64,7 +64,6 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
                         
                         await ExchangeService().buyTokens(idDaStartup, quantidade);
                         
-                        // Registrar transação local para atualização em tempo real
                         SimpleTransactionService().addTransaction(
                           type: 'COMPRA',
                           amount: quantidade.toString(),
@@ -97,8 +96,82 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
                       );
                     },
                   ),
-                  _buildCircularAction(icon: Icons.swap_horiz, label: 'Trocar', onTap: () {}), 
-                  _buildCircularAction(icon: Icons.send, label: 'Enviar', onTap: () {}), 
+                  _buildCircularAction(
+                    icon: Icons.swap_horiz, 
+                    label: 'Trocar', 
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Trocar Tokens'),
+                          content: const Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Escolha o token para permuta:'),
+                              SizedBox(height: 16),
+                              ListTile(
+                                leading: CircleAvatar(child: Text('D')),
+                                title: Text('DevMatch (DMT)'),
+                                trailing: Icon(Icons.arrow_forward_ios, size: 14),
+                              ),
+                              ListTile(
+                                leading: CircleAvatar(child: Text('G')),
+                                title: Text('GreenFlow (GRN)'),
+                                trailing: Icon(Icons.arrow_forward_ios, size: 14),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+                          ],
+                        ),
+                      );
+                    },
+                  ), 
+                  _buildCircularAction(
+                    icon: Icons.send, 
+                    label: 'Enviar', 
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Enviar Tokens'),
+                          content: const Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextField(
+                                decoration: InputDecoration(
+                                  labelText: 'Endereço da Carteira',
+                                  hintText: '0x...',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              TextField(
+                                decoration: InputDecoration(
+                                  labelText: 'Quantidade',
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.number,
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Envio simulado com sucesso!'), backgroundColor: Colors.green),
+                                );
+                              },
+                              child: const Text('Enviar'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ), 
                 ],
               ),
 
@@ -212,12 +285,19 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
       child: Column(
         children: [
           Container( 
-            padding: const EdgeInsets.all(15),
-            decoration: const BoxDecoration(
+            padding: const EdgeInsets.all(20), // Aumentado para preencher melhor o círculo
+            decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
-            child: Icon(icon, color: Colors.black, size: 24),
+            child: Icon(icon, color: Colors.black, size: 28), // Ícone um pouco maior
           ),
           const SizedBox(height: 8),
           Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)), 
@@ -408,42 +488,58 @@ class CarteiraBalcaoScreen extends StatelessWidget { // Define a tela como um co
   }
 
   
-  Widget _buildBottomNav(BuildContext context, Color activeColor) { // Função que constrói a barra de navegação flutuante e escura.
+  Widget _buildBottomNav(BuildContext context, Color activeColor) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20), // Define as margens para a barra não encostar nas bordas.
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF222222), // Cor de fundo grafite da barra.
-        borderRadius: BorderRadius.circular(40), // Arredonda totalmente as pontas da barra.
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Espaça os ícones do menu igualmente.
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, AppRoutes.catalogo),
-            child: const Icon(Icons.home_filled, color: Colors.white70), // Ícone da página inicial.
-          ),
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, AppRoutes.balcao),
-            child: const Icon(Icons.account_balance, color: Colors.white70), // Ícone do balcão.
-          ),
-          Container( // Widget que destaca o botão da aba atual (Carteira).
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          _buildNavItem(Icons.home_outlined, 'INÍCIO', false, () => Navigator.pushNamed(context, AppRoutes.home)),
+          _buildNavItem(Icons.account_balance_wallet, 'CARTEIRA', true, () {}, activeColor: activeColor),
+          _buildNavItem(Icons.storefront_outlined, 'BALCÃO', false, () => Navigator.pushNamed(context, AppRoutes.balcao)),
+          _buildNavItem(Icons.grid_view, 'CATÁLOGO', false, () => Navigator.pushNamed(context, AppRoutes.catalogo)),
+          _buildNavItem(Icons.person_outline, 'PERFIL', false, () => Navigator.pushNamed(context, AppRoutes.profileSecurity)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, String label, bool isSelected, VoidCallback onTap, {Color? activeColor}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: activeColor,
+              color: isSelected ? (activeColor?.withOpacity(0.1) ?? Colors.purple.withOpacity(0.1)) : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Row(
-              children: [
-                Icon(Icons.account_balance_wallet, color: Colors.white, size: 20), // Ícone de carteira.
-                SizedBox(width: 8),
-                Text('Carteira', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), // Texto da aba ativa.
-              ],
+            child: Icon(
+              icon,
+              color: isSelected ? (activeColor ?? Colors.purple) : Colors.grey,
+              size: 24,
             ),
           ),
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, AppRoutes.historico),
-            child: const Icon(Icons.history, color: Colors.white70), // Ícone de histórico.
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? (activeColor ?? Colors.purple) : Colors.grey,
+              fontSize: 10,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
         ],
       ),

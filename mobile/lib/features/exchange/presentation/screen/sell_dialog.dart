@@ -104,14 +104,15 @@ class _SellTokensDialogState extends State<SellTokensDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Text(
                 'Vender ${widget.startupName}',
                 style: const TextStyle(
@@ -307,6 +308,7 @@ class _SellTokensDialogState extends State<SellTokensDialog> {
           ),
         ),
       ),
+    ),
     );
   }
 }
