@@ -2,19 +2,22 @@ name: Branch criada → Issue para In Progress
 
 on:
   create:
-    branches:
-      - 'feature/**'
+  workflow_dispatch:
 
 jobs:
   move-to-in-progress:
+    if: github.event_name == 'workflow_dispatch' || (github.event.ref_type == 'branch' && startsWith(github.event.ref, 'feature/'))
     runs-on: ubuntu-latest
     steps:
       - name: Extrair número da issue pelo nome da branch
         id: extract
         run: |
-          BRANCH="${{ github.ref_name }}"
-          ISSUE=$(echo "$BRANCH" | grep -oP '\d+' | head -1)
+          BRANCH="${{ github.event.ref || github.ref_name }}"
+          # Busca o primeiro número na string (ex: feature/123 -> 123)
+          ISSUE=$(echo "$BRANCH" | grep -oE '[0-9]+' | head -1)
           echo "issue=$ISSUE" >> $GITHUB_OUTPUT
+          echo "Branch detectada: $BRANCH"
+          echo "Issue extraída: $ISSUE"
 
       - name: Mover issue para In Progress no GitHub Projects
         uses: actions/github-script@v7
@@ -22,7 +25,12 @@ jobs:
           github-token: ${{ secrets.PROJECT_TOKEN }}
           script: |
             const issueNumber = parseInt('${{ steps.extract.outputs.issue }}');
-            if (!issueNumber) return;
+            if (!issueNumber) {
+              console.log('Número da issue não encontrado na branch.');
+              return;
+            }
+
+            console.log(`Buscando issue #${issueNumber}...`);
 
             const query = `
               query($owner: String!, $repo: String!) {
@@ -53,12 +61,30 @@ jobs:
               repo: context.repo.repo
             });
 
+            if (!result.repository.issue) {
+              console.log(`Issue #${issueNumber} não encontrada.`);
+              return;
+            }
+
             const items = result.repository.issue.projectItems.nodes;
+            if (items.length === 0) {
+              console.log(`A issue #${issueNumber} não está em nenhum projeto.`);
+              return;
+            }
+
             for (const item of items) {
+              console.log(`Verificando item no projeto: ${item.project.id}`);
               for (const fv of item.fieldValues.nodes) {
                 if (fv.field?.name === 'Status') {
+                  console.log(`Status atual encontrado. Opções disponíveis:`, fv.field.options.map(o => o.name));
                   const inProgress = fv.field.options.find(o => o.name === 'Em Progresso');
-                  if (!inProgress) continue;
+                  
+                  if (!inProgress) {
+                    console.log('Opção "Em Progresso" não encontrada nas configurações do projeto.');
+                    continue;
+                  }
+
+                  console.log(`Movendo para "Em Progresso" (ID: ${inProgress.id})...`);
                   await github.graphql(`
                     mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
                       updateProjectV2ItemFieldValue(input: {
@@ -72,6 +98,7 @@ jobs:
                     field: fv.field.id,
                     option: inProgress.id
                   });
+                  console.log('Sucesso!');
                 }
               }
             }
