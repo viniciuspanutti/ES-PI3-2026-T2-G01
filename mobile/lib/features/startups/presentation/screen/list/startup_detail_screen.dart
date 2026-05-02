@@ -5,6 +5,7 @@ import 'package:mobile/features/startups/presentation/widgets/startup_header_wid
 import 'package:mobile/features/startups/presentation/widgets/startup_society_widget.dart';
 import 'package:mobile/features/startups/presentation/widgets/startup_media_widget.dart';
 import 'package:mobile/features/startups/data/startup_service.dart';
+import 'package:mobile/features/exchange/presentation/screen/sell_dialog.dart';
 
 class StartupDetailScreen extends StatelessWidget {
   final StartupDetail startup;
@@ -69,9 +70,13 @@ class StartupDetailScreen extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Funcionalidade de Investimento em breve!'),
+                  showDialog(
+                    context: context,
+                    builder: (context) => SellTokensDialog(
+                      startupId: startup.id,
+                      startupName: startup.name,
+                      ownedTokens: 345, // Simulação - deveria vir do backend
+                      currentPrice: 6.09, // Simulação - deveria vir do backend
                     ),
                   );
                 },
@@ -82,7 +87,7 @@ class StartupDetailScreen extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  'INVESTIR NESTA STARTUP',
+                  'VENDER TOKENS',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
