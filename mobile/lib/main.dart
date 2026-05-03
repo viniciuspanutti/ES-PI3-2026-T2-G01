@@ -1,7 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile/core/routes/app_routes.dart';
-import 'package:mobile/features/auth/presentation/login_screen.dart';
+import 'package:mobile/features/auth/presentation/home_screen.dart';
+import 'package:mobile/features/dashboard/main_wrapper_screen.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -24,9 +26,22 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF512DA8)),
       ),
-      // Ponto de entrada da navegação
-      home: const LoginPage(),
-      // Todas as rotas nomeadas centralizadas em AppRoutes
+      // Fluxo de Autenticação Firebase
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasData) {
+            // CORREÇÃO: Passando a GlobalKey para o Wrapper principal
+            return MainWrapperScreen(key: AppRoutes.mainWrapperKey);
+          }
+          return const PaginaInicial();
+        },
+      ),
       routes: AppRoutes.routes,
     );
   }

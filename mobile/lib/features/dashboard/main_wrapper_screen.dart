@@ -8,11 +8,18 @@ class MainWrapperScreen extends StatefulWidget {
   const MainWrapperScreen({super.key});
 
   @override
-  State<MainWrapperScreen> createState() => _MainWrapperScreenState();
+  State<MainWrapperScreen> createState() => MainWrapperScreenState();
 }
 
-class _MainWrapperScreenState extends State<MainWrapperScreen> {
+class MainWrapperScreenState extends State<MainWrapperScreen> {
   int _currentIndex = 0;
+
+  void setIndex(int index) {
+    if (!mounted) return;
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   final List<Widget> _screens = [
     const WalletDashboardPage(),
@@ -23,39 +30,36 @@ class _MainWrapperScreenState extends State<MainWrapperScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      // ── BARRA DE NAVEGAÇÃO GLOBAL ─────────────────────────────────────────
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        height: 70,
-        decoration: BoxDecoration(
-          color: const Color(0xFF222222),
-          borderRadius: BorderRadius.circular(35),
+    // BLINDAGEM: Intercepta o botão de voltar do hardware
+    return WillPopScope(
+      onWillPop: () async {
+        if (_currentIndex != 0) {
+          setIndex(0); // Se não estiver na home, volta pra home
+          return false; // Bloqueia o fechamento do app
+        }
+        return true; // Se já estiver na home, permite o comportamento padrão
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            GestureDetector(
-              onTap: () => setState(() => _currentIndex = 0),
-              child: _buildNavItem(Icons.home_outlined, "Home", 0),
-            ),
-            GestureDetector(
-              onTap: () => setState(() => _currentIndex = 1),
-              child: _buildNavItem(Icons.search, "Explorar", 1),
-            ),
-            GestureDetector(
-              onTap: () => setState(() => _currentIndex = 2),
-              child: _buildNavItem(Icons.grid_view, "Balcão", 2),
-            ),
-            GestureDetector(
-              onTap: () => setState(() => _currentIndex = 3),
-              child: _buildNavItem(Icons.person_outline, "Perfil", 3),
-            ),
-          ],
+        bottomNavigationBar: Container(
+          margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          height: 70,
+          decoration: BoxDecoration(
+            color: const Color(0xFF222222),
+            borderRadius: BorderRadius.circular(35),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavItem(Icons.home_outlined, "Home", 0),
+              _buildNavItem(Icons.search, "Explorar", 1),
+              _buildNavItem(Icons.grid_view, "Balcão", 2),
+              _buildNavItem(Icons.person_outline, "Perfil", 3),
+            ],
+          ),
         ),
       ),
     );
@@ -63,33 +67,32 @@ class _MainWrapperScreenState extends State<MainWrapperScreen> {
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     final isSelected = _currentIndex == index;
-    if (isSelected) {
-      return Container(
+    return GestureDetector(
+      onTap: () => setIndex(index),
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF512DA8),
-          borderRadius: BorderRadius.circular(20),
-        ),
+        decoration: isSelected
+            ? BoxDecoration(
+                color: const Color(0xFF512DA8),
+                borderRadius: BorderRadius.circular(20),
+              )
+            : null,
         child: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+            Icon(icon, color: Colors.white, size: isSelected ? 18 : 24),
+            if (isSelected) ...[
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
+            ],
           ],
         ),
-      );
-    } else {
-      return Container(
-        padding: const EdgeInsets.all(8),
-        color: Colors.transparent,
-        child: Icon(icon, color: Colors.white),
-      );
-    }
+      ),
+    );
   }
 }

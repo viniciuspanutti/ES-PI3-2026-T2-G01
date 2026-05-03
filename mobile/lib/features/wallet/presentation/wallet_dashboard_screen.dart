@@ -1,442 +1,562 @@
-// feito por camila fernandes costacurta RA:25012949 
-import 'package:fl_chart/fl_chart.dart';
+// ── wallet_dashboard_screen.dart (Home Dashboard) ─────────────────────
+// Tela principal (index 0 do MainWrapperScreen).
+// SEM BottomNavigationBar (gerenciada pelo Wrapper global).
+// SEM mocks de AppStorage/SharedPreferences.
+// ──────────────────────────────────────────────────────────────────────
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:mobile/services/local_storage_service.dart';
+import 'package:flutter/services.dart';
+import 'package:mobile/core/routes/app_routes.dart';
+import 'package:mobile/features/startups/data/startup_service.dart';
+import 'package:mobile/features/startups/domain/startup.dart';
+import 'package:mobile/features/startups/presentation/screen/list/startup_detail_screen.dart';
 
+// ── Helpers ──────────────────────────────────────────────────────────
+String? _normalizeUserName(String? value) {
+  final t = value?.trim();
+  return (t == null || t.isEmpty) ? null : t;
+}
+
+String? _nameFromEmail(String? email) {
+  final raw = email?.split('@').first.trim();
+  if (raw == null || raw.isEmpty) return null;
+  return raw
+      .replaceAll(RegExp(r'[._-]+'), ' ')
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .map((w) => w.length == 1
+          ? w.toUpperCase()
+          : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+      .join(' ');
+}
+
+String _formatCents(int c) {
+  final v = (c / 100).toStringAsFixed(2).replaceAll('.', ',');
+  return 'R\$$v';
+}
+
+String _stageLabel(String s) => s.trim().isEmpty ? 'Sem status' : s;
+
+List<StartupDetail> _featuredStartups(List<StartupDetail> list) {
+  final f = list.where((s) => s.tags.any((t) {
+        final n = t.toLowerCase().trim();
+        return n == 'semana' || n == 'destaque' || n == 'featured' || n == 'week';
+      })).toList();
+  return f.isNotEmpty ? f : list.take(1).toList();
+}
+
+// ── Dados estáticos (substituir por Firebase futuramente) ────────────
+const double _mockBalance = 1922.34;
+
+// =====================================================================
+// WIDGET PRINCIPAL
+// =====================================================================
 class WalletDashboardPage extends StatefulWidget {
   const WalletDashboardPage({super.key});
-
   @override
   State<WalletDashboardPage> createState() => _WalletDashboardPageState();
 }
 
 class _WalletDashboardPageState extends State<WalletDashboardPage> {
-  String selectedPeriod = 'M';
-  double _saldoByd = 0;
-  List<Map<String, dynamic>> _transacoes = [];
-  bool _loading = true;
-  int _currentIndex = 1;
-  final TextEditingController _aporteController = TextEditingController();
+  final StartupService _startupService = StartupService();
+  late Future<List<StartupDetail>> _startupsFuture;
+
+  bool _showBalance = true;
+  String _userName = 'Usuário';
+  String? _userPhotoUrl;
+
+  static const _bg = Color(0xFFF5F5F5);
+  static const _purple = Color(0xFF5A2D91);
+  static const _blue = Color(0xFF4169FF);
+  static const _green = Color(0xFF18A71B);
+  static const _card = Color(0xFFF7F7FA);
 
   @override
   void initState() {
     super.initState();
-    _loadCarteira();
+    _startupsFuture = _startupService.getStartups().timeout(
+          const Duration(seconds: 10),
+          onTimeout: () => const [],
+        );
+    unawaited(_loadFirebaseUser());
   }
 
-  @override
-  void dispose() {
-    _aporteController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadCarteira() async {
-    final saldo = await AppStorage.getWalletBalance();
-    final txs = await AppStorage.getWalletTransactions();
-
+  Future<void> _loadFirebaseUser() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final name = _normalizeUserName(user.displayName) ??
+        _nameFromEmail(user.email) ??
+        _normalizeUserName(user.email);
     if (!mounted) return;
     setState(() {
-      _saldoByd = saldo;
-      _transacoes = txs;
-      _loading = false;
+      _userName = name ?? _userName;
+      _userPhotoUrl = user.photoURL ?? _userPhotoUrl;
     });
   }
 
-  Future<void> _persistCarteira() async {
-    await AppStorage.setWalletBalance(_saldoByd);
-    await AppStorage.setWalletTransactions(_transacoes);
+  void _toggle() => setState(() => _showBalance = !_showBalance);
+
+  void _msg(String m) {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(
+        content: Text(m),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(milliseconds: 1600),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ));
   }
 
-  Future<void> _adicionarSaldo() async {
-    _aporteController.clear();
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Adicionar saldo'),
-        content: TextField(
-          controller: _aporteController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
-            hintText: 'Ex: 50.00',
-            labelText: 'Quantidade (BYD)',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final valor = double.tryParse(
-                    _aporteController.text.trim().replaceAll(',', '.'),
-                  ) ??
-                  0;
-              if (valor <= 0) {
-                if (!dialogContext.mounted) return;
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('Informe um valor válido.')),
-                );
-                return;
-              }
-
-              setState(() {
-                _saldoByd += valor;
-                _transacoes.insert(0, {
-                  'title': 'Aporte manual',
-                  'subtitle': 'Saldo adicionado pela carteira',
-                  'value': '+${valor.toStringAsFixed(2)} BYD',
-                  'kind': 'deposit',
-                  'createdAt': DateTime.now().toIso8601String(),
-                });
-              });
-              await _persistCarteira();
-              if (!dialogContext.mounted) return;
-              Navigator.pop(dialogContext);
-              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                const SnackBar(content: Text('Saldo adicionado com sucesso!')),
-              );
-            },
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _mostrarStartupsInvestidas() {
-    final ativos = _transacoes
-        .map((tx) => tx['title']?.toString() ?? '')
-        .where((title) => title.isNotEmpty)
-        .toSet()
-        .toList();
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (_) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: ativos.isEmpty
-              ? const Text('Nenhum ativo encontrado.')
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Meus ativos',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 10),
-                    ...ativos.map(
-                      (nome) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.pie_chart_outline),
-                        title: Text(nome),
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _abrirBalcao() async {
-    await Navigator.pushNamed(context, '/balcao');
-    if (!mounted) return;
-    await _loadCarteira();
-  }
-
-  void _onBottomTap(int index) {
-    setState(() => _currentIndex = index);
-    if (index == 2) {
-      _abrirBalcao();
-      return;
+  // ── CORREÇÃO DE NAVEGAÇÃO VIA GLOBAL KEY ──────────────────────────
+  void _push(String r) {
+    final wrapper = AppRoutes.mainWrapperKey.currentState;
+    
+    // Se o Wrapper existir (estamos logados), trocamos de aba
+    if (wrapper != null) {
+      if (r == AppRoutes.investir || r == AppRoutes.vender || r == AppRoutes.balcao || r == AppRoutes.comprar) {
+        wrapper.setIndex(2); // Aba do Balcão
+        return;
+      }
+      if (r == AppRoutes.loja || r == AppRoutes.catalogo) {
+        wrapper.setIndex(1); // Aba de Explorar
+        return;
+      }
+      if (r == AppRoutes.perfil || r == AppRoutes.profileSecurity) {
+        wrapper.setIndex(3); // Aba de Perfil
+        return;
+      }
     }
-    if (index == 3) {
-      Navigator.pushNamed(context, '/profile-security');
-      return;
-    }
-    if (index == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Você já está na área principal.')),
+    
+    // Fallback: Se for uma rota que não é aba (ex: Detalhes, Notificações), faz o push
+    Navigator.of(context).pushNamed(r);
+  }
+  // ──────────────────────────────────────────────────────────────────
+
+  void _openDetail(StartupDetail s) => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => StartupDetailScreen(startup: s)),
       );
-    }
+
+  void _reload() {
+    setState(() {
+      _startupsFuture = _startupService.getStartups().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => const [],
+          );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Header(
+                  purple: _purple,
+                  userName: _userName,
+                  photoUrl: _userPhotoUrl,
+                  showBalance: _showBalance,
+                  onToggle: _toggle,
+                  onBell: () => _push(AppRoutes.notificacoes),
+                ),
+                const SizedBox(height: 24),
+                _WalletCard(
+                  purple: _purple,
+                  show: _showBalance,
+                  onCard: () => _push(AppRoutes.cartao),
+                  onMore: () => _msg('Opções da carteira'),
+                ),
+                const SizedBox(height: 26),
+                _QuickActions(onRoute: _push),
+                const SizedBox(height: 24),
+                _StartupSections(
+                  future: _startupsFuture,
+                  bg: _card,
+                  blue: _blue,
+                  green: _green,
+                  onRetry: _reload,
+                  onAll: () => _push(AppRoutes.loja),
+                  onTap: _openDetail,
+                  onMore: () => _msg('Opções dos investimentos'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =====================================================================
+// HEADER (Inalterado)
+// =====================================================================
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.purple, required this.userName, required this.photoUrl,
+    required this.showBalance, required this.onToggle, required this.onBell,
+  });
+  final Color purple;
+  final String userName;
+  final String? photoUrl;
+  final bool showBalance;
+  final VoidCallback onToggle, onBell;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      Container(
+        width: 40, height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: ClipOval(child: _Avatar(url: photoUrl)),
+      ),
+      const SizedBox(width: 12),
+      Flexible(child: Text('Olá, $userName', maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: purple, fontSize: 17, fontWeight: FontWeight.w600))),
+      const Spacer(),
+      _Tap(onTap: onToggle, child: Icon(showBalance ? CupertinoIcons.eye_slash : CupertinoIcons.eye, color: purple, size: 23)),
+      const SizedBox(width: 14),
+      _Tap(onTap: onBell, child: Icon(CupertinoIcons.bell, color: purple, size: 22)),
+    ]);
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  const _Avatar({this.url});
+  final String? url;
+  @override
+  Widget build(BuildContext context) {
+    final s = url?.trim();
+    if (s != null && s.isNotEmpty) {
+      return s.startsWith('http')
+          ? Image.network(s, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const _DefAvatar())
+          : Image.asset(s, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const _DefAvatar());
     }
-
-    final spots = _getHistoricoPrecos(selectedPeriod);
-    final variacao = _formatVariacao(spots);
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFFDFBFF),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(
-                top: 60,
-                left: 24,
-                right: 24,
-                bottom: 40,
-              ),
-              decoration: const BoxDecoration(
-                color: Color(0xFF4B0082),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(40),
-                  bottomRight: Radius.circular(40),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'PATRIMÔNIO ESTIMADO',
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white60,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'R\$ ${(_saldoByd * 6.10).toStringAsFixed(2)}',
-                    style: GoogleFonts.philosopher(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Rendimento: $variacao',
-                      style: const TextStyle(
-                        color: Color(0xFF4B0082),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 35),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildActionBtn(
-                        'Recarregar',
-                        Icons.account_balance_wallet_outlined,
-                        _adicionarSaldo,
-                      ),
-                      _buildActionBtn(
-                        'Meus Ativos',
-                        Icons.pie_chart_outline,
-                        _mostrarStartupsInvestidas,
-                      ),
-                      _buildActionBtn('Negociar', Icons.sync_alt, _abrirBalcao),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Histórico de Valorização',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildPeriodSelector(),
-                  const SizedBox(height: 30),
-                  SizedBox(
-                    height: 180,
-                    child: LineChart(
-                      LineChartData(
-                        gridData: const FlGridData(show: false),
-                        titlesData: const FlTitlesData(show: false),
-                        borderData: FlBorderData(show: false),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: spots,
-                            isCurved: false,
-                            color: const Color(0xFF4B0082),
-                            barWidth: 3,
-                            dotData: const FlDotData(show: true),
-                            belowBarData: BarAreaData(
-                              show: true,
-                              color: const Color(0xFF4B0082).withValues(alpha: 0.05),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Movimentações Recentes',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 15),
-                  if (_transacoes.isEmpty)
-                    const Center(child: Text('Sem ordens registradas.'))
-                  else
-                    ..._transacoes.take(3).map(_itemTransacaoCustom),
-                ],
-              ),
-            ),
-            const SizedBox(height: 100),
-          ],
-        ),
-      ),
-    );
+    return Image.asset('assets/images/perfil.png', fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const _DefAvatar());
   }
+}
 
-  Widget _buildActionBtn(String title, IconData icon, VoidCallback action) {
-    return Column(
-      children: [
-        ElevatedButton(
-          onPressed: action,
-          style: ElevatedButton.styleFrom(
-            shape: const CircleBorder(),
-            padding: const EdgeInsets.all(16),
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF4B0082),
-            elevation: 2,
-          ),
-          child: Icon(icon, size: 24),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
+class _DefAvatar extends StatelessWidget {
+  const _DefAvatar();
+  @override
+  Widget build(BuildContext context) => const DecoratedBox(
+        decoration: BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topCenter, end: Alignment.bottomCenter,
+          colors: [Color(0xFF5A2D91), Color(0xFF9B8BAF)])),
+        child: Icon(CupertinoIcons.person_fill, color: Colors.white, size: 23));
+}
 
-  Widget _buildPeriodSelector() {
-    final periods = ['D', 'S', 'M', '6M', 'YTD'];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: periods
-            .map(
-              (p) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  onTap: () => setState(() => selectedPeriod = p),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selectedPeriod == p
-                          ? const Color(0xFF4B0082)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: selectedPeriod == p
-                            ? Colors.transparent
-                            : Colors.grey[300]!,
-                      ),
-                    ),
-                    child: Text(
-                      p,
-                      style: TextStyle(
-                        color: selectedPeriod == p ? Colors.white : Colors.grey,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
+// =====================================================================
+// WALLET CARD (Inalterado)
+// =====================================================================
+class _WalletCard extends StatelessWidget {
+  const _WalletCard({required this.purple, required this.show, required this.onCard, required this.onMore});
+  final Color purple;
+  final bool show;
+  final VoidCallback onCard, onMore;
 
-  Widget _itemTransacaoCustom(Map<String, dynamic> tx) {
-    final valor = tx['value']?.toString() ?? '';
-    final isPositive = valor.contains('+');
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10),
-        ],
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [Color(0xFF6B33B4), Color(0xFF5B2E92), Color(0xFF44206F)]),
+        boxShadow: [BoxShadow(color: purple.withOpacity(0.18), blurRadius: 22, offset: const Offset(0, 12))],
       ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.circle,
-            size: 10,
-            color: isPositive ? Colors.green : Colors.red,
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Text(
-              tx['title'] ?? 'Ordem',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          Text(
-            valor,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Expanded(child: Text('MesclaInvest', style: TextStyle(color: Colors.white, fontFamily: 'Georgia', fontSize: 16, fontWeight: FontWeight.w500))),
+          Text(show ? 'R\$ 1.922,34' : 'R\$ ******', style: const TextStyle(color: Colors.white, fontFamily: 'Georgia', fontSize: 18, fontWeight: FontWeight.w600)),
+        ]),
+        const SizedBox(height: 9),
+        const Row(children: [
+          Icon(CupertinoIcons.building_2_fill, color: Colors.white70, size: 12),
+          SizedBox(width: 6),
+          Text('05 23-12 - 856988490', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500)),
+        ]),
+        const SizedBox(height: 20),
+        Row(children: [
+          _Chip(label: 'Carteira', icon: CupertinoIcons.creditcard_fill, onTap: onCard),
+          const Spacer(),
+          _Tap(onTap: onMore, child: Container(width: 24, height: 24,
+              decoration: BoxDecoration(color: Colors.black.withOpacity(0.35), shape: BoxShape.circle),
+              alignment: Alignment.center, child: const Icon(CupertinoIcons.ellipsis, color: Colors.white, size: 14))),
+        ]),
+      ]),
     );
   }
+}
 
-  List<FlSpot> _getHistoricoPrecos(String period) {
-    if (period == 'D') {
-      return const [FlSpot(0, 6.0), FlSpot(1, 6.08), FlSpot(2, 6.10)];
+class _Chip extends StatelessWidget {
+  const _Chip({required this.label, required this.icon, required this.onTap});
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    return Material(color: Colors.transparent, child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(16),
+        child: Container(height: 30, padding: const EdgeInsets.symmetric(horizontal: 9),
+            decoration: BoxDecoration(color: Colors.black.withOpacity(0.26), borderRadius: BorderRadius.circular(16)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(icon, color: Colors.white, size: 14), const SizedBox(width: 5),
+              Text(label, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w500)),
+            ]))));
+  }
+}
+
+class _Tap extends StatelessWidget {
+  const _Tap({required this.onTap, required this.child});
+  final VoidCallback onTap;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => Material(color: Colors.transparent,
+      child: InkResponse(onTap: onTap, radius: 24, child: Padding(padding: const EdgeInsets.all(4), child: child)));
+}
+
+// =====================================================================
+// QUICK ACTIONS (Inalterado)
+// =====================================================================
+class _QuickActions extends StatelessWidget {
+  const _QuickActions({required this.onRoute});
+  final ValueChanged<String> onRoute;
+  @override
+  Widget build(BuildContext context) {
+    const bg = Color(0xFFEFEFF2);
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+      _QBtn(label: 'Investir', bg: bg, icon: Icons.insert_chart_outlined_rounded, onTap: () => onRoute(AppRoutes.investir)),
+      _QBtn(label: 'Vender', bg: bg, icon: CupertinoIcons.money_dollar_circle, onTap: () => onRoute(AppRoutes.vender)),
+      _QBtn(label: 'Depositar', bg: bg, icon: CupertinoIcons.arrow_up, onTap: () => onRoute(AppRoutes.depositar)),
+      _QBtn(label: 'Sacar', bg: bg, icon: CupertinoIcons.arrow_down, onTap: () => onRoute(AppRoutes.sacar)),
+    ]);
+  }
+}
+
+class _QBtn extends StatelessWidget {
+  const _QBtn({required this.label, required this.icon, required this.bg, required this.onTap});
+  final String label;
+  final IconData icon;
+  final Color bg;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    return Material(color: Colors.transparent, child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(32),
+        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), child: Column(children: [
+          Container(width: 46, height: 46, decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+              alignment: Alignment.center, child: Icon(icon, color: Colors.black87, size: 23)),
+          const SizedBox(height: 9),
+          Text(label, style: const TextStyle(color: Color(0xFF333333), fontSize: 15, fontWeight: FontWeight.w500)),
+        ]))));
+  }
+}
+
+// =====================================================================
+// INVESTMENT SECTIONS (FIRESTORE) (Inalterado)
+// =====================================================================
+class _StartupSections extends StatelessWidget {
+  const _StartupSections({
+    required this.future, required this.bg, required this.blue,
+    required this.green, required this.onRetry, required this.onAll,
+    required this.onTap, required this.onMore,
+  });
+  final Future<List<StartupDetail>> future;
+  final Color bg, blue, green;
+  final VoidCallback onRetry, onAll, onMore;
+  final ValueChanged<StartupDetail> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<StartupDetail>>(
+      future: future,
+      builder: (ctx, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return _Sections(bg: bg, blue: blue, green: green, inv: const [], wk: const [],
+              invMsg: 'Carregando empresas do Firestore...', wkMsg: 'Carregando empresas da semana...',
+              onAll: onAll, onMore: onMore);
+        }
+        if (snap.hasError) {
+          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            _Sections(bg: bg, blue: blue, green: green, inv: const [], wk: const [],
+                invMsg: 'Não foi possível carregar as empresas.',
+                wkMsg: 'Configure o Firebase ou tente novamente.', onAll: onAll, onMore: onMore),
+            const SizedBox(height: 10),
+            Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+                onPressed: onRetry, icon: const Icon(Icons.refresh, size: 18), label: const Text('Tentar novamente'))),
+          ]);
+        }
+        final all = snap.data ?? [];
+        final inv = all.take(3).map(_Item.fromStartup).toList();
+        final wk = _featuredStartups(all).take(3).map(_Item.fromStartup).toList();
+        return _Sections(bg: bg, blue: blue, green: green, inv: inv, wk: wk,
+            invMsg: 'Nenhuma empresa cadastrada.', wkMsg: 'Nenhuma empresa da semana.',
+            onAll: onAll, onMore: onMore, onItemTap: (i) { if (i.startup != null) onTap(i.startup!); });
+      },
+    );
+  }
+}
+
+class _Sections extends StatelessWidget {
+  const _Sections({
+    required this.bg, required this.blue, required this.green,
+    required this.inv, required this.wk, required this.invMsg,
+    required this.wkMsg, required this.onAll, required this.onMore, this.onItemTap,
+  });
+  final Color bg, blue, green;
+  final List<_Item> inv, wk;
+  final String invMsg, wkMsg;
+  final VoidCallback onAll, onMore;
+  final ValueChanged<_Item>? onItemTap;
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        _Section(title: 'Seus Investimentos', bg: bg, blue: blue, green: green,
+            items: inv, empty: invMsg, showMore: true, showAll: inv.isNotEmpty,
+            onMore: onMore, onAll: onAll, onItemTap: onItemTap),
+        const SizedBox(height: 22),
+        _Section(title: 'Empresas da Semana', bg: bg, blue: blue, green: green,
+            items: wk, empty: wkMsg, onItemTap: onItemTap),
+      ]);
+}
+
+class _Section extends StatelessWidget {
+  const _Section({
+    required this.title, required this.items, required this.bg,
+    required this.blue, required this.green, this.showMore = false,
+    this.showAll = false, this.empty = '', this.onMore, this.onAll, this.onItemTap,
+  });
+  final String title, empty;
+  final List<_Item> items;
+  final Color bg, blue, green;
+  final bool showMore, showAll;
+  final VoidCallback? onMore, onAll;
+  final ValueChanged<_Item>? onItemTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(18),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 6))]),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text(title, style: const TextStyle(color: Color(0xFF191919), fontFamily: 'Georgia', fontSize: 16, fontWeight: FontWeight.w500))),
+          if (showMore) _Tap(onTap: onMore ?? () {}, child: const Icon(CupertinoIcons.ellipsis, size: 18, color: Color(0xFF1D1D1F))),
+        ]),
+        const SizedBox(height: 12),
+        if (items.isEmpty) _Empty(msg: empty)
+        else for (var i = 0; i < items.length; i++) ...[
+          _Tile(item: items[i], blue: blue, green: green,
+              onTap: onItemTap == null ? null : () => onItemTap!(items[i])),
+          if (i != items.length - 1) const Divider(height: 18, thickness: 0.7, color: Color(0xFFD3D4D8)),
+        ],
+        if (showAll) ...[
+          const SizedBox(height: 14),
+          InkWell(onTap: onAll, borderRadius: BorderRadius.circular(8),
+              child: const Padding(padding: EdgeInsets.symmetric(vertical: 4),
+                  child: Text('Ver Todos', style: TextStyle(color: Color(0xFF4169FF), fontSize: 14, fontWeight: FontWeight.w500)))),
+        ],
+      ]),
+    );
+  }
+}
+
+class _Empty extends StatelessWidget {
+  const _Empty({required this.msg});
+  final String msg;
+  @override
+  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Row(children: [
+        Container(width: 36, height: 36, decoration: const BoxDecoration(color: Color(0xFFEDEDF1), shape: BoxShape.circle),
+            child: const Icon(CupertinoIcons.building_2_fill, color: Color(0xFF777777), size: 18)),
+        const SizedBox(width: 12),
+        Expanded(child: Text(msg, style: const TextStyle(color: Color(0xFF6F6F76), fontSize: 13, height: 1.3))),
+      ]));
+}
+
+class _Tile extends StatelessWidget {
+  const _Tile({required this.item, required this.blue, required this.green, this.onTap});
+  final _Item item;
+  final Color blue, green;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(color: Colors.transparent, child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(12),
+        child: Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Row(children: [
+          SizedBox(width: 38, child: _Logo(url: item.imageUrl, label: item.company)),
+          const SizedBox(width: 10),
+          Expanded(flex: 3, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(item.company, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Color(0xFF191919), fontSize: 16, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 2),
+            Text(item.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Color(0xFF6F6F76), fontSize: 12)),
+          ])),
+          Expanded(flex: 2, child: Text(item.status, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: blue, fontSize: 13, fontWeight: FontWeight.w500))),
+          const SizedBox(width: 8),
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(item.value, style: const TextStyle(color: Color(0xFF1D1D1F), fontSize: 14, fontWeight: FontWeight.w500)),
+            const SizedBox(width: 8),
+            const Icon(CupertinoIcons.chevron_forward, size: 12, color: Color(0xFF1D1D1F)),
+          ]),
+        ]))));
+  }
+}
+
+class _Logo extends StatelessWidget {
+  const _Logo({this.url, required this.label});
+  final String? url;
+  final String label;
+  @override
+  Widget build(BuildContext context) {
+    if (url != null && url!.isNotEmpty) {
+      final img = url!.startsWith('http')
+          ? Image.network(url!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => _Fallback(l: label))
+          : Image.asset(url!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => _Fallback(l: label));
+      return ClipRRect(borderRadius: BorderRadius.circular(8), child: SizedBox(width: 32, height: 32, child: img));
     }
-    return const [FlSpot(0, 5.7), FlSpot(1, 5.9), FlSpot(2, 6.10)];
+    return _Fallback(l: label);
   }
+}
 
-  String _formatVariacao(List<FlSpot> spots) {
-    if (spots.isEmpty) return '0.00%';
-    final ini = spots.first.y;
-    final fim = spots.last.y;
-    final res = ((fim - ini) / ini) * 100;
-    return '${res >= 0 ? '+' : ''}${res.toStringAsFixed(2)}%';
+class _Fallback extends StatelessWidget {
+  const _Fallback({required this.l});
+  final String l;
+  @override
+  Widget build(BuildContext context) {
+    final i = l.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).take(2).map((p) => p[0].toUpperCase()).join();
+    return Container(width: 32, height: 32, decoration: BoxDecoration(color: const Color(0xFFEDEDF1), borderRadius: BorderRadius.circular(8)),
+        alignment: Alignment.center, child: Text(i.isEmpty ? '?' : i, style: const TextStyle(color: Color(0xFF1D1D1F), fontSize: 13, fontWeight: FontWeight.w700)));
   }
+}
+
+// ── Data class para itens da lista ──────────────────────────────────
+class _Item {
+  const _Item({required this.company, required this.subtitle, required this.status, required this.value, this.imageUrl, this.startup});
+  factory _Item.fromStartup(StartupDetail s) => _Item(
+        company: s.name,
+        subtitle: s.shortDescription,
+        status: _stageLabel(s.stage),
+        value: _formatCents(s.currentTokenPriceCents),
+        imageUrl: s.coverImageUrl,
+        startup: s,
+      );
+  final String company, subtitle, status, value;
+  final String? imageUrl;
+  final StartupDetail? startup;
 }

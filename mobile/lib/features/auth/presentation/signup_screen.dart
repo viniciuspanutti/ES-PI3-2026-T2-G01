@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/services/auth_service.dart';
-import 'package:mobile/features/startups/presentation/screen/list/catalogo_de_startups.dart';
 
 const _brandPurple = Color(0xFF5A3296);
 const _dividerColor = Color(0xFFE6E1E1);
@@ -11,11 +10,6 @@ const _focusedBorderColor = Color(0x335A3296);
 const _headingFontFamily = 'MarcellusSC';
 const _serifFontFamily = 'Marcellus';
 
-// ── REMOVIDO: main() e MyApp duplicados ──────────────────────────────
-// O entrypoint real do app está em lib/main.dart.
-// Este arquivo agora exporta apenas o widget SignUpPage.
-// ─────────────────────────────────────────────────────────────────────
-
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
@@ -25,12 +19,9 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   bool _obscurePassword = true;
-
-  // ── INTEGRAÇÃO FIREBASE AUTH ───────────────────────────────────────
   final AuthService _authService = AuthService();
   bool _isLoading = false;
 
-  // Controllers para capturar os dados do formulário
   final _nomeController = TextEditingController();
   final _emailController = TextEditingController();
   final _cpfController = TextEditingController();
@@ -47,13 +38,11 @@ class _SignUpPageState extends State<SignUpPage> {
     super.dispose();
   }
 
-  /// Conecta o botão "Concluir o Cadastro" ao Firebase Auth.
   Future<void> _concluirCadastro() async {
     final email = _emailController.text.trim();
     final senha = _senhaController.text;
     final nome = _nomeController.text.trim();
 
-    // Validação local rápida
     if (nome.isEmpty || email.isEmpty || senha.isEmpty) {
       _showError('Preencha todos os campos obrigatórios.');
       return;
@@ -67,15 +56,11 @@ class _SignUpPageState extends State<SignUpPage> {
         password: senha,
       );
 
-      // Atualiza o displayName com o nome informado
       await credential.user?.updateDisplayName(nome);
 
+      // CORREÇÃO FINAL: Remove a tela de cadastro da pilha para revelar o Dashboard
       if (!mounted) return;
-
-      // ── Navegação pós-cadastro ─────────────────────────────────────
-      // Vai direto ao catálogo, removendo toda a pilha de navegação.
-      // ──────────────────────────────────────────────────────────────
-      Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
+      Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
       _showError(e.toString().replaceFirst('Exception: ', ''));
@@ -93,7 +78,6 @@ class _SignUpPageState extends State<SignUpPage> {
       ),
     );
   }
-  // ── FIM DA INTEGRAÇÃO ──────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +143,6 @@ class _SignUpPageState extends State<SignUpPage> {
                                 ),
                               ),
                               const SizedBox(height: 34),
-                              // ── Campos agora com controllers ──────
                               PrototypeField(
                                 label: 'Nome Completo',
                                 hintText: 'Jualino Correia Silva',
@@ -233,7 +216,6 @@ class _SignUpPageState extends State<SignUpPage> {
                         child: SizedBox(
                           width: double.infinity,
                           height: 44,
-                          // ── BOTÃO COM ESTADO DE CARREGAMENTO ───────
                           child: _isLoading
                               ? const Center(
                                   child: CircularProgressIndicator(

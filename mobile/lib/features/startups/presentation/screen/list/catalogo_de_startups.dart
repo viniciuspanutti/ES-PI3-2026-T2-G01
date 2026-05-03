@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
-// ── SUBSTITUIÇÃO DO MOCK ─────────────────────────────────────────────
-// Antes:  import '../../../data/startup_mock.dart';
-// Agora o catálogo consome dados reais do Firestore via StartupService.
-// ─────────────────────────────────────────────────────────────────────
 import '../../../data/startup_service.dart';
 import '../../../domain/startup.dart';
 import 'startup_detail_screen.dart';
-import 'package:mobile/features/auth/data/user_service.dart';
-import 'package:mobile/features/auth/presentation/mfa_verification_screen.dart';
+import 'package:mobile/core/routes/app_routes.dart';
 
 class CatalogoStartupsPage extends StatefulWidget {
   const CatalogoStartupsPage({super.key});
@@ -18,11 +13,6 @@ class CatalogoStartupsPage extends StatefulWidget {
 
 class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
   String _filtroSelecionado = 'Todas';
-
-  // ── SUBSTITUIÇÃO DO MOCK ───────────────────────────────────────────
-  // Antes:  final List<StartupDetail> startups = StartupMock.allStartups;
-  // Agora usamos o serviço real que consulta o Firestore.
-  // ───────────────────────────────────────────────────────────────────
   final StartupService _startupService = StartupService();
   late Future<List<StartupDetail>> _startupsFuture;
 
@@ -42,64 +32,34 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
     return result.toLowerCase().replaceAll(' ', '_');
   }
 
-  String _formatStage(String stage) {
-    switch (stage.toLowerCase()) {
-      case 'nova': return 'Nova';
-      case 'em_operacao': return 'Em operação';
-      case 'em_expansao': return 'Em expansão';
-      default: return stage;
-    }
-  }
-
   void _abrirFiltros() {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text(
-            "Filtrar por Estágio",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: ['Todas', 'Nova', 'Em operação', 'Em expansão'].map((
-                  label,
-                ) {
-                  final bool isSelected = _filtroSelecionado == label;
-                  return ChoiceChip(
-                    label: Text(label),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _filtroSelecionado = label;
-                      });
-                      Navigator.pop(context);
-                    },
-                    selectedColor: const Color(0xFF512DA8),
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black,
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Fechar", style: TextStyle(color: Colors.grey)),
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Filtrar por Estágio", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Wrap(
+              spacing: 10,
+              children: ['Todas', 'Nova', 'Em operação', 'Em expansão'].map((label) {
+                final bool isSelected = _filtroSelecionado == label;
+                return ChoiceChip(
+                  label: Text(label),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() => _filtroSelecionado = label);
+                    Navigator.pop(context);
+                  },
+                  selectedColor: const Color(0xFF512DA8),
+                  labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
+                );
+              }).toList(),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -110,17 +70,16 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Cabeçalho Restaurado: Voltar, Título e Filtro
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // CORREÇÃO: Restaurada a seta de voltar. 
+                  // Ela usa o Smart Back para garantir que o app não feche.
                   IconButton(
                     icon: const Icon(Icons.arrow_back, color: Colors.black),
-                    onPressed: () {
-                      Navigator.maybePop(context);
-                    },
+                    onPressed: () => AppRoutes.smartBack(context),
                   ),
                   const Text(
                     "Startups MesclaInvest",
@@ -133,209 +92,34 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                 ],
               ),
             ),
-
-            if (_filtroSelecionado != 'Todas')
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 5,
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      "Filtrado por: ",
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                    ),
-                    Chip(
-                      label: Text(
-                        _filtroSelecionado,
-                        style: const TextStyle(fontSize: 10),
-                      ),
-                      onDeleted: () =>
-                          setState(() => _filtroSelecionado = 'Todas'),
-                    ),
-                  ],
-                ),
-              ),
-
-            // ── SUBSTITUIÇÃO DO MOCK ─────────────────────────────────
-            // Antes:  lista síncrona direta (startups).
-            // Agora:  FutureBuilder com estados de loading, erro e vazio.
-            // ─────────────────────────────────────────────────────────
             Expanded(
               child: FutureBuilder<List<StartupDetail>>(
                 future: _startupsFuture,
                 builder: (context, snapshot) {
-                  // ── Estado de carregamento ─────────────────────────
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF512DA8),
-                      ),
-                    );
+                    return const Center(child: CircularProgressIndicator(color: Color(0xFF512DA8)));
                   }
-
-                  // ── Estado de erro ─────────────────────────────────
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 30),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.cloud_off,
-                              size: 64,
-                              color: Colors.grey.shade300,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              "Erro ao carregar startups.\nVerifique sua conexão.",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  _startupsFuture =
-                                      _startupService.getStartups();
-                                });
-                              },
-                              icon: const Icon(Icons.refresh),
-                              label: const Text("Tentar novamente"),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  // ── Dados carregados ───────────────────────────────
+                  if (snapshot.hasError) return const Center(child: Text("Erro ao carregar startups."));
+                  
                   final startups = snapshot.data ?? [];
-
-                  // Aplica o filtro de estágio sobre os dados reais
                   final listaFiltrada = _filtroSelecionado == 'Todas'
                       ? startups
-                      : startups
-                            .where((s) => _normalize(s.stage) == _normalize(_filtroSelecionado))
-                            .toList();
-
-                  if (listaFiltrada.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.search_off,
-                            size: 64,
-                            color: Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            "Nenhuma startup encontrada\nneste estágio.",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
+                      : startups.where((s) => _normalize(s.stage) == _normalize(_filtroSelecionado)).toList();
 
                   return ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     itemCount: listaFiltrada.length,
-                    separatorBuilder: (_, _) =>
-                        Divider(color: Colors.grey.shade100, height: 1),
+                    separatorBuilder: (_, _) => Divider(color: Colors.grey.shade100, height: 1),
                     itemBuilder: (context, index) {
                       final item = listaFiltrada[index];
-                      return InkWell(
+                      return ListTile(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  StartupDetailScreen(startup: item),
-                            ),
-                          );
+                           Navigator.push(context, MaterialPageRoute(builder: (_) => StartupDetailScreen(startup: item)));
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  // ── SUBSTITUIÇÃO DO MOCK ───────────
-                                  // Antes: Image.asset (imagens locais).
-                                  // Agora: suporte a URL remota E asset.
-                                  // ──────────────────────────────────
-                                  child: _buildStartupImage(item.coverImageUrl),
-                                ),
-                              ),
-                              const SizedBox(width: 15),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      item.shortDescription,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade500,
-                                        fontSize: 13,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    _formatStage(item.stage),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const Text(
-                                    "ATIVA",
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                        leading: _buildStartupImage(item.coverImageUrl),
+                        title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(item.shortDescription, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        trailing: Text(item.stage),
                       );
                     },
                   );
@@ -348,29 +132,11 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
     );
   }
 
-  /// Decide se a imagem é um asset local ou uma URL remota.
   Widget _buildStartupImage(String? imageUrl) {
-    if (imageUrl == null || imageUrl.isEmpty) {
-      return const Icon(Icons.business, color: Color(0xFF512DA8));
-    }
-
-    // Se começa com http/https, carrega da rede (Firestore pode guardar URLs)
-    if (imageUrl.startsWith('http')) {
-      return Image.network(
-        imageUrl,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) =>
-            const Icon(Icons.business, color: Color(0xFF512DA8)),
-      );
-    }
-
-    // Caso contrário, tenta carregar como asset local
-    final fileName = imageUrl.split('/').last;
-    return Image.asset(
-      'assets/images/logos/$fileName',
-      fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) =>
-          const Icon(Icons.business, color: Color(0xFF512DA8)),
+    return Container(
+      width: 44, height: 44,
+      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10)),
+      child: const Icon(Icons.business, color: Color(0xFF512DA8)),
     );
   }
 }
