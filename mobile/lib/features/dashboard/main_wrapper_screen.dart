@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/features/startups/presentation/screen/list/catalogo_de_startups.dart';
 import 'package:mobile/features/wallet/presentation/trading_market_screen.dart';
 import 'package:mobile/features/profile/presentation/security_settings_screen.dart';
+import 'package:mobile/features/wallet/presentation/wallet_dashboard_screen.dart';
 
 class MainWrapperScreen extends StatefulWidget {
   const MainWrapperScreen({super.key});
@@ -14,7 +15,7 @@ class _MainWrapperScreenState extends State<MainWrapperScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    const BalcaoNegociacaoPage(),
+    const WalletDashboardScreen(),
     const CatalogoStartupsPage(),
     const BalcaoNegociacaoPage(),
     const ProfileSecurityScreen(),

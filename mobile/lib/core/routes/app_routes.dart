@@ -7,11 +7,11 @@ import 'package:mobile/features/auth/presentation/signup_screen.dart';
 import 'package:mobile/features/profile/presentation/security_settings_screen.dart';
 import 'package:mobile/features/startups/presentation/screen/list/catalogo_de_startups.dart';
 import 'package:mobile/features/wallet/presentation/trading_market_screen.dart';
+import 'package:mobile/features/dashboard/main_wrapper_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
-  static const String mainWrapper = '/main';
-  static const String menu = '/menu';
+  static const String mainRoute = '/main';
   static const String login = '/login';
   static const String cadastro = '/cadastro';
   static const String recuperarSenha = '/recuperarsenha';
@@ -33,8 +33,7 @@ class AppRoutes {
   static const String notificacoes = '/notificacoes';
 
   static Map<String, WidgetBuilder> get routes => {
-    mainWrapper: (_) => const HomeScreen(),
-    menu: (_) => const HomeScreen(),
+    mainRoute: (_) => const MainWrapperScreen(),
     login: (_) => const LoginPage(),
     cadastro: (_) => const SignUpPage(),
     recuperarSenha: (_) => const RecuperarSenha(),
