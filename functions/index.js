@@ -1,22 +1,9 @@
-/**Vinícius
- * Explicação do código ->
- */
+const functions = require('firebase-functions');
+const nodemailer = require('nodemailer');
 
-
-import { setGlobalOptions } from "firebase-functions";
-export * as exchange from "./exchange";
-
-setGlobalOptions({ maxInstances: 10 });
-
-export * from "./startups";
-
-import * as functions from "firebase-functions";
-import * as nodemailer from "nodemailer";
-
-export const sendMfaEmail = functions.https.onCall(async (request) => {
-    // Agora acessamos o 'data' de dentro do 'request'
-    const email = request.data.email;
-    const code = request.data.code;
+exports.sendMfaEmail = functions.https.onCall(async (data, context) => {
+    const email = data.email;
+    const code = data.code;
 
     const transporter = nodemailer.createTransport({
         service: 'gmail',
