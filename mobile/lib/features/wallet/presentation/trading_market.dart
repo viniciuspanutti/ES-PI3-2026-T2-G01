@@ -568,11 +568,33 @@
        ), 
        title: Text(item['titulo'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)), 
        subtitle: Text(item['sub'], style: const TextStyle(fontSize: 11, color: Colors.grey)), 
-       trailing: Text("${item['valor']} ${widget.startup['ticker']}", 
-         style: const TextStyle(fontWeight: FontWeight.bold)), 
-     ); 
-   } 
- } 
+       trailing: Row(
+        mainAxisSize: MainAxisSize.min, // Garante que a Row não ocupe a tela toda
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic, // Alinha os textos pela base (linha de escrita)
+        children: [
+          Text(
+            "${item['valor']}",
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16, // Valor um pouco maior
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(width: 4), // Espacinho entre o número e o ticker
+          Text(
+            "${widget.startup['ticker']}",
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 12, // Ticker menor
+              color: Colors.grey, // Cor diferente para separar visualmente
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+} 
 
  class TransactionDetailsScreen extends StatelessWidget { 
    final Map<String, dynamic> transacao; 
