@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/features/auth/presentation/email_sent_confirmation_screen.dart';
 import 'package:mobile/features/auth/presentation/forgot_password_screen.dart';
-import 'package:mobile/features/auth/presentation/home_screen.dart';
 import 'package:mobile/features/auth/presentation/login_screen.dart';
 import 'package:mobile/features/auth/presentation/signup_screen.dart';
 import 'package:mobile/features/auth/presentation/mfa_verification_screen.dart';
 import 'package:mobile/features/startups/presentation/screen/list/catalogo_de_startups.dart';
 import 'package:mobile/features/wallet/presentation/depositar_screen.dart';
 import 'package:mobile/features/wallet/presentation/sacar_screen.dart';
-import 'package:mobile/features/wallet/presentation/trading_market_screen.dart';
 import 'package:mobile/features/wallet/presentation/trade_market.dart';
 import 'package:mobile/features/dashboard/main_wrapper_screen.dart';
 
