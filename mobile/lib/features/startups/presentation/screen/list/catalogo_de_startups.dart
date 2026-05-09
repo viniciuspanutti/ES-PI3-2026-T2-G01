@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import '../../../data/startup_service.dart';
 import '../../../domain/startup.dart';
 import 'startup_detail_screen.dart';
-import 'package:mobile/features/auth/data/user_service.dart';
-import 'package:mobile/features/auth/presentation/mfa_verification_screen.dart';
 
 class CatalogoStartupsPage extends StatefulWidget {
   const CatalogoStartupsPage({super.key});
@@ -33,21 +31,27 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
   }
 
   String _normalize(String text) {
-    var withDia = 'áàãâäéèêëíìîïóòõôöúùûüçÁÀÃÂÄÉÈÊËÍÌÎÏÓÒÕÔÖÚÙÛÜÇ';
-    var withoutDia = 'aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC'; 
-    var result = text;
-    for (int i = 0; i < withDia.length; i++) {
-      result = result.replaceAll(withDia[i], withoutDia[i]);
-    }
-    return result.toLowerCase().replaceAll(' ', '_');
+    return text
+        .toLowerCase()
+        .replaceAll(' ', '_')
+        .replaceAll(RegExp(r'[áàãâä]'), 'a')
+        .replaceAll(RegExp(r'[éèêë]'), 'e')
+        .replaceAll(RegExp(r'[íìîï]'), 'i')
+        .replaceAll(RegExp(r'[óòõôö]'), 'o')
+        .replaceAll(RegExp(r'[úùûü]'), 'u')
+        .replaceAll('ç', 'c');
   }
 
   String _formatStage(String stage) {
     switch (stage.toLowerCase()) {
-      case 'nova': return 'Nova';
-      case 'em_operacao': return 'Em operação';
-      case 'em_expansao': return 'Em expansão';
-      default: return stage;
+      case 'nova':
+        return 'Nova';
+      case 'em_operacao':
+        return 'Em operação';
+      case 'em_expansao':
+        return 'Em expansão';
+      default:
+        return stage;
     }
   }
 
@@ -204,8 +208,8 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                             OutlinedButton.icon(
                               onPressed: () {
                                 setState(() {
-                                  _startupsFuture =
-                                      _startupService.getStartups();
+                                  _startupsFuture = _startupService
+                                      .getStartups();
                                 });
                               },
                               icon: const Icon(Icons.refresh),
@@ -221,10 +225,11 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                   final startups = snapshot.data ?? [];
 
                   // Aplica o filtro de estágio sobre os dados reais
+                  final String filtroNormalizado = _normalize(_filtroSelecionado);
                   final listaFiltrada = _filtroSelecionado == 'Todas'
                       ? startups
                       : startups
-                            .where((s) => _normalize(s.stage) == _normalize(_filtroSelecionado))
+                            .where((s) => _normalize(s.stage) == filtroNormalizado)
                             .toList();
 
                   if (listaFiltrada.isEmpty) {
@@ -291,8 +296,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                               const SizedBox(width: 15),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       item.name,

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/features/startups/domain/startup.dart';
+import 'package:mobile/features/startups/presentation/screen/list/private_questions_chat_screen.dart';
 import 'package:mobile/features/startups/presentation/widgets/startup_header_widget.dart';
 import 'package:mobile/features/startups/presentation/widgets/startup_society_widget.dart';
 import 'package:mobile/features/startups/presentation/widgets/startup_media_widget.dart';
-import 'package:mobile/features/startups/data/startup_service.dart';
+
+enum _QuestionSheetStep { options, publicQuestion, privateQuestion }
 
 class StartupDetailScreen extends StatelessWidget {
   final StartupDetail startup;
@@ -41,26 +43,7 @@ class StartupDetailScreen extends StatelessWidget {
             const SizedBox(height: 24),
             StartupMediaWidget(startup: startup),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () => _showQuestionModal(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'PERGUNTAR',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
+            _StartupQuestionSection(startup: startup),
             const SizedBox(height: 32),
             StartupSocietyWidget(startup: startup),
             const SizedBox(height: 40),
@@ -96,106 +79,519 @@ class StartupDetailScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class _StartupQuestionSection extends StatefulWidget {
+  final StartupDetail startup;
+
+  const _StartupQuestionSection({required this.startup});
+
+  @override
+  State<_StartupQuestionSection> createState() =>
+      _StartupQuestionSectionState();
+}
+
+class _StartupQuestionSectionState extends State<_StartupQuestionSection> {
+  final List<_PublicQuestion> _publicQuestions = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: () => _showQuestionModal(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'PERGUNTAR',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        if (_publicQuestions.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          _buildPublicQuestionsSection(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPublicQuestionsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Perguntas p\u00fablicas',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ..._publicQuestions.map((question) {
+          return Card(
+            elevation: 0,
+            color: Colors.grey.shade50,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(color: Colors.grey.shade300, width: 1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        question.author,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        question.time,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    question.text,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
 
   void _showQuestionModal(BuildContext context) {
     final TextEditingController questionController = TextEditingController();
-    bool isLoading = false;
+    var currentStep = _QuestionSheetStep.options;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (context, setState) {
-            return Padding(
+          builder: (sheetContext, modalSetState) {
+            return AnimatedPadding(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 20,
-                right: 20,
-                top: 20,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Fazer uma Pergunta",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: questionController,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      hintText: "Digite sua pergunta aqui...",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: isLoading
-                          ? null
-                          : () async {
-                              final text = questionController.text.trim();
-                              if (text.isEmpty) return;
-
-                              setState(() => isLoading = true);
-                              try {
-                                await StartupService().createStartupQuestion(startup.id, text);
-                                if (context.mounted) {
-                                  Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Pergunta enviada com sucesso!'),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Erro: $e')),
-                                  );
-                                }
-                              } finally {
-                                setState(() => isLoading = false);
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'ENVIAR PERGUNTA',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 22),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 46,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE0E3EA),
+                              borderRadius: BorderRadius.circular(10),
                             ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _buildQuestionSheetHeader(sheetContext),
+                        const SizedBox(height: 24),
+                        if (currentStep == _QuestionSheetStep.options)
+                          _buildQuestionOptions(
+                            onPublicTap: () {
+                              modalSetState(() {
+                                currentStep = _QuestionSheetStep.publicQuestion;
+                              });
+                            },
+                            onPrivateTap: () {
+                              modalSetState(() {
+                                currentStep =
+                                    _QuestionSheetStep.privateQuestion;
+                              });
+                            },
+                          )
+                        else if (currentStep ==
+                            _QuestionSheetStep.publicQuestion)
+                          _buildPublicQuestionForm(
+                            questionController: questionController,
+                            onChanged: () => modalSetState(() {}),
+                            onSend: () {
+                              final question = questionController.text.trim();
+                              if (question.isEmpty) return;
+
+                              setState(() {
+                                _publicQuestions.insert(
+                                  0,
+                                  _PublicQuestion(
+                                    author: 'Voc\u00ea',
+                                    text: question,
+                                    time: _formatTime(DateTime.now()),
+                                  ),
+                                );
+                              });
+
+                              Navigator.pop(sheetContext);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Pergunta p\u00fablica adicionada.',
+                                  ),
+                                ),
+                              );
+                            },
+                            onBack: () {
+                              modalSetState(() {
+                                currentStep = _QuestionSheetStep.options;
+                              });
+                            },
+                          )
+                        else
+                          _buildPrivateQuestionInfo(
+                            onOpenChat: () {
+                              Navigator.pop(sheetContext);
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => PrivateQuestionsChatScreen(
+                                    startup: widget.startup,
+                                  ),
+                                ),
+                              );
+                            },
+                            onBack: () {
+                              modalSetState(() {
+                                currentStep = _QuestionSheetStep.options;
+                              });
+                            },
+                          ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                ],
+                ),
               ),
             );
           },
         );
       },
+    ).whenComplete(questionController.dispose);
+  }
+
+  Widget _buildQuestionSheetHeader(BuildContext sheetContext) {
+    return Row(
+      children: [
+        const Expanded(
+          child: Text(
+            'Fazer uma pergunta',
+            style: TextStyle(
+              color: Color(0xFF111827),
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: () => Navigator.pop(sheetContext),
+          icon: const Icon(Icons.close, color: Color(0xFF9AA3B2), size: 26),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+        ),
+      ],
     );
   }
+
+  Widget _buildQuestionOptions({
+    required VoidCallback onPublicTap,
+    required VoidCallback onPrivateTap,
+  }) {
+    return Column(
+      children: [
+        _buildQuestionOptionCard(
+          icon: Icons.language,
+          title: 'Pergunta p\u00fablica',
+          description:
+              'Aparece nos detalhes da startup para outros investidores visualizarem.',
+          onTap: onPublicTap,
+        ),
+        const SizedBox(height: 14),
+        _buildQuestionOptionCard(
+          icon: Icons.lock_outline,
+          title: 'Pergunta privada',
+          description:
+              'Chat exclusivo com os fundadores para investidores que possuem tokens.',
+          onTap: onPrivateTap,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuestionOptionCard({
+    required IconData icon,
+    required String title,
+    required String description,
+    required VoidCallback onTap,
+  }) {
+    const radius = 14.0;
+
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: AppColors.white,
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: Color(0xFFE9ECF2), width: 1.2),
+          borderRadius: BorderRadius.circular(radius),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radius),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF8F0FF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: AppColors.primary, size: 27),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Color(0xFF111827),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        description,
+                        style: const TextStyle(
+                          color: Color(0xFF697386),
+                          fontSize: 14,
+                          height: 1.35,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPublicQuestionForm({
+    required TextEditingController questionController,
+    required VoidCallback onChanged,
+    required VoidCallback onSend,
+    required VoidCallback onBack,
+  }) {
+    final hasText = questionController.text.trim().isNotEmpty;
+
+    return Column(
+      children: [
+        TextField(
+          controller: questionController,
+          minLines: 3,
+          maxLines: 3,
+          onChanged: (_) => onChanged(),
+          style: const TextStyle(fontSize: 16, color: Color(0xFF111827)),
+          decoration: InputDecoration(
+            hintText: 'Escreva sua d\u00favida sobre a startup...',
+            hintStyle: const TextStyle(
+              color: Color(0xFF9AA3B2),
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+            contentPadding: const EdgeInsets.all(18),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFFE9ECF2)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppColors.primary),
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: ElevatedButton(
+            onPressed: hasText ? onSend : null,
+            style: ElevatedButton.styleFrom(
+              elevation: hasText ? 4 : 0,
+              backgroundColor: hasText
+                  ? AppColors.primary
+                  : const Color(0xFFE2E5EB),
+              disabledBackgroundColor: const Color(0xFFE2E5EB),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'ENVIAR PERGUNTA',
+              style: TextStyle(
+                color: hasText ? AppColors.white : const Color(0xFF9AA3B2),
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: onBack,
+          child: const Text(
+            'Voltar para op\u00e7\u00f5es',
+            style: TextStyle(
+              color: Color(0xFF6B7280),
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPrivateQuestionInfo({
+    required VoidCallback onOpenChat,
+    required VoidCallback onBack,
+  }) {
+    return Column(
+      children: [
+        const SizedBox(height: 2),
+        Container(
+          width: 64,
+          height: 64,
+          decoration: const BoxDecoration(
+            color: Color(0xFFF8F0FF),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.lock_outline,
+            color: AppColors.primary,
+            size: 34,
+          ),
+        ),
+        const SizedBox(height: 18),
+        const Text(
+          'Voc\u00ea ser\u00e1 direcionado para o chat privado,\n'
+          'uma \u00e1rea exclusiva para detentores de tokens\n'
+          'desta startup.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFF4B5563),
+            fontSize: 16,
+            height: 1.35,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 26),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: onOpenChat,
+            style: ElevatedButton.styleFrom(
+              elevation: 10,
+              shadowColor: AppColors.primary.withValues(alpha: 0.25),
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: const Text(
+              'IR PARA CHAT PRIVADO',
+              style: TextStyle(
+                color: AppColors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: onBack,
+          child: const Text(
+            'Voltar para op\u00e7\u00f5es',
+            style: TextStyle(
+              color: Color(0xFF6B7280),
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+}
+
+class _PublicQuestion {
+  final String author;
+  final String text;
+  final String time;
+
+  const _PublicQuestion({
+    required this.author,
+    required this.text,
+    required this.time,
+  });
 }

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:mobile/services/local_storage_service.dart';
+import 'package:mobile/core/routes/app_routes.dart';
+import 'package:mobile/features/wallet/presentation/trade_market.dart' as camila_market;
 
 class BalcaoNegociacaoPage extends StatefulWidget {
   const BalcaoNegociacaoPage({super.key});
@@ -129,13 +131,18 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context, 
+              AppRoutes.mainRoute, 
+              (route) => false,
+            );
+          },
+        ),
         title: Text('Balcao de Negociacao', style: GoogleFonts.lora()),
-        actions: [
-          IconButton(
-            onPressed: () => Navigator.pushNamed(context, '/profile-security'),
-            icon: const Icon(Icons.security_outlined),
-          ),
-        ],
+        actions: [],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -185,6 +192,22 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 30),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const camila_market.BalcaoNegociacaoPage()),
+              );
+            },
+            icon: const Icon(Icons.storefront, color: Colors.white),
+            label: const Text('Acessar Mercado de Startups', style: TextStyle(color: Colors.white, fontSize: 16)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple[800],
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           ),
         ],
       ),

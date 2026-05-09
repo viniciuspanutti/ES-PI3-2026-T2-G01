@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CampoDeEmail extends StatelessWidget {
-  final controller; // pegar o que o usuario digitou dps
+  final TextEditingController controller; // pegar o que o usuario digitou dps
   final String hintText; // colocar o texto em cima de onde digitar
   final bool obscureText; // esconder a senha
 

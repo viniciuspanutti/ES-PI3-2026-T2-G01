@@ -3,9 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/services/auth_service.dart';
 import 'package:mobile/widgets/custom_login_button_widget.dart';
 import 'package:mobile/widgets/custom_forgot_password_button_widget.dart';
+import 'dart:math';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile/core/services/email_service.dart';
+import 'package:mobile/core/routes/app_routes.dart';
 import 'package:mobile/widgets/custom_text_field_widget.dart';
 import 'package:mobile/widgets/custom_back_arrow_widget.dart';
-import 'package:mobile/features/startups/presentation/screen/list/catalogo_de_startups.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -51,11 +55,45 @@ class _LoginPageState extends State<LoginPage> {
 
       if (!mounted) return;
 
-      // ── Navegação pós-login ────────────────────────────────────────
-      // pushAndRemoveUntil remove toda a pilha de telas anteriores,
-      // impedindo que o botão "Voltar" do Android retorne ao login.
-      // ──────────────────────────────────────────────────────────────
-      Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final prefs = await SharedPreferences.getInstance();
+        final isMfaEnabled = prefs.getBool('mfa_enabled_${user.uid}') ?? false;
+
+        if (isMfaEnabled) {
+          final random = Random();
+          final code = (100000 + random.nextInt(900000)).toString();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Enviando código para seu e-mail...'),
+              backgroundColor: Colors.blue.shade700,
+            ),
+          );
+
+          try {
+            await EmailService.sendOTP(email, code);
+          } catch (e) {
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+              });
+              _showError('Erro no envio do e-mail: $e');
+            }
+            return; // Impede que vá para a próxima tela sem o código enviado
+          }
+
+          if (!mounted) return;
+          setState(() {
+            _isLoading = false;
+          });
+          Navigator.pushNamed(context, AppRoutes.mfa, arguments: code);
+          return;
+        }
+      }
+
+      // ── Navegação pós-login se não tiver MFA ────────────────────────
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.mainRoute, (route) => false);
     } catch (e) {
       if (!mounted) return;
       _showError(e.toString().replaceFirst('Exception: ', ''));

@@ -4,16 +4,17 @@ import 'package:mobile/features/auth/presentation/forgot_password_screen.dart';
 import 'package:mobile/features/auth/presentation/home_screen.dart';
 import 'package:mobile/features/auth/presentation/login_screen.dart';
 import 'package:mobile/features/auth/presentation/signup_screen.dart';
-import 'package:mobile/features/profile/presentation/security_settings_screen.dart';
+import 'package:mobile/features/auth/presentation/mfa_verification_screen.dart';
 import 'package:mobile/features/startups/presentation/screen/list/catalogo_de_startups.dart';
 import 'package:mobile/features/wallet/presentation/depositar_screen.dart';
 import 'package:mobile/features/wallet/presentation/sacar_screen.dart';
 import 'package:mobile/features/wallet/presentation/trading_market_screen.dart';
+import 'package:mobile/features/wallet/presentation/trade_market.dart';
+import 'package:mobile/features/dashboard/main_wrapper_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
-  static const String mainWrapper = '/main';
-  static const String menu = '/menu';
+  static const String mainRoute = '/main';
   static const String login = '/login';
   static const String cadastro = '/cadastro';
   static const String recuperarSenha = '/recuperarsenha';
@@ -35,14 +36,12 @@ class AppRoutes {
   static const String notificacoes = '/notificacoes';
 
   static Map<String, WidgetBuilder> get routes => {
-    mainWrapper: (_) => const HomeScreen(),
-    menu: (_) => const HomeScreen(),
+    mainRoute: (_) => const MainWrapperScreen(),
     login: (_) => const LoginPage(),
     cadastro: (_) => const SignUpPage(),
     recuperarSenha: (_) => const RecuperarSenha(),
     emailEnviado: (_) => const EmailEnviado(),
     catalogo: (_) => const CatalogoStartupsPage(),
-    profileSecurity: (_) => const ProfileSecurityScreen(),
     startupDetalhes: (_) => const RoutePlaceholderPage(
       title: 'Detalhes da startup',
       subtitle: 'Use a lista para abrir uma startup real.',
@@ -71,11 +70,10 @@ class AppRoutes {
       subtitle: 'Rota pronta para integrar a central de notificacoes.',
       icon: Icons.notifications_none,
     ),
-    mfa: (_) => const RoutePlaceholderPage(
-      title: 'MFA',
-      subtitle: 'Use o fluxo de autenticacao para abrir a verificacao.',
-      icon: Icons.security,
-    ),
+    mfa: (context) {
+      final code = ModalRoute.of(context)?.settings.arguments as String? ?? '';
+      return MfaVerificationScreen(expectedCode: code);
+    },
   };
 }
 
@@ -98,6 +96,16 @@ class RoutePlaceholderPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context, 
+              AppRoutes.mainRoute, 
+              (route) => false,
+            );
+          },
+        ),
         backgroundColor: Colors.white,
         foregroundColor: primaryPurple,
         elevation: 0,

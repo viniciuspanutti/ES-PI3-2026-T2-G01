@@ -461,7 +461,7 @@ class HomeBottomNavigationBar extends StatelessWidget {
             icon: CupertinoIcons.house_fill,
             isActive: true,
             label: 'Home',
-            onTap: () => onRouteTap(AppRoutes.mainWrapper),
+            onTap: () => onRouteTap(AppRoutes.mainRoute),
           ),
           _NavIcon(
             icon: CupertinoIcons.search,

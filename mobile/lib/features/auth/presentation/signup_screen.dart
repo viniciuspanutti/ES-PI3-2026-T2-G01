@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/services/auth_service.dart';
-import 'package:mobile/features/startups/presentation/screen/list/catalogo_de_startups.dart';
 
 const _brandPurple = Color(0xFF5A3296);
 const _dividerColor = Color(0xFFE6E1E1);
