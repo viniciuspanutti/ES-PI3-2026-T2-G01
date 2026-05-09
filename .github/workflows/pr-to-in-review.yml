@@ -12,16 +12,26 @@ jobs:
         id: extract
         run: |
           BRANCH="${{ github.head_ref }}"
-          ISSUE=$(echo "$BRANCH" | grep -oP '\d+' | head -1)
+          # Usa regex específico para pegar o padrão 'issue-123' evitando falsos positivos
+          ISSUE=$(echo "$BRANCH" | grep -oE 'issue-[0-9]+' | grep -oE '[0-9]+' | head -1)
           echo "issue=$ISSUE" >> $GITHUB_OUTPUT
+          echo "Branch detectada: $BRANCH"
+          echo "Issue extraída: $ISSUE"
 
       - name: Mover issue para In Review no GitHub Projects
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.PROJECT_TOKEN }}
           script: |
+            const TARGET_STATUS = 'Revisando';
             const issueNumber = parseInt('${{ steps.extract.outputs.issue }}');
-            if (!issueNumber) return;
+            
+            if (!issueNumber) {
+              console.log('Número da issue não encontrado na branch.');
+              return;
+            }
+
+            console.log(`Buscando issue #${issueNumber}...`);
 
             const query = `
               query($owner: String!, $repo: String!) {
@@ -52,25 +62,188 @@ jobs:
               repo: context.repo.repo
             });
 
+            // Guard contra repository.issue nulo (ex: se a issue não existe no repo)
+            if (!result.repository.issue) {
+              console.log(`Issue #${issueNumber} não encontrada no repositório.`);
+              return;
+            }
+
             const items = result.repository.issue.projectItems.nodes;
-            for (const item of items) {
-              for (const fv of item.fieldValues.nodes) {
-                if (fv.field?.name === 'Status') {
-                  const inReview = fv.field.options.find(o => o.name === 'Revisando');
-                  if (!inReview) continue;
-                  await github.graphql(`
-                    mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
-                      updateProjectV2ItemFieldValue(input: {
-                        projectId: $project, itemId: $item,
-                        fieldId: $field, value: { singleSelectOptionId: $option }
-                      }) { projectV2Item { id } }
+            console.log(`Issues encontradas em projectItems.nodes (busca normal): ${items.length}`);
+
+            // [MELHORIA B] Fallback caso o projeto seja org-level/user-level
+            if (items.length === 0) {
+              console.log(`A issue #${issueNumber} não retornou projectItems. Isso acontece se o projeto for org-level/user-level ou se a issue ainda não estiver vinculada.`);
+              console.log(`[FALLBACK ATIVADO] Tentando buscar o projeto diretamente pelo número...`);
+              
+              const PROJECT_NUMBER = 6;
+              const ownerType = 'user';
+              
+              const fallbackQuery = `
+                query($login: String!, $projectNum: Int!) {
+                  ${ownerType}(login: $login) {
+                    projectV2(number: $projectNum) {
+                      id
+                      field(name: "Status") {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          options { id name }
+                        }
+                      }
+                      items(first: 100) {
+                        nodes {
+                          id
+                          content {
+                            ... on Issue { number }
+                          }
+                        }
+                      }
                     }
-                  `, {
-                    project: item.project.id,
-                    item: item.id,
-                    field: fv.field.id,
-                    option: inReview.id
-                  });
+                  }
+                }
+              `;
+              
+              try {
+                const fallbackResult = await github.graphql(fallbackQuery, {
+                  login: context.repo.owner,
+                  projectNum: PROJECT_NUMBER
+                });
+                
+                const project = fallbackResult[ownerType]?.projectV2;
+                if (project) {
+                  console.log(`Projeto V2 #${PROJECT_NUMBER} encontrado. ID: ${project.id}`);
+                  
+                  const targetOption = project.field?.options?.find(o => o.name === TARGET_STATUS);
+                  if (!targetOption) {
+                    console.log(`Opção "${TARGET_STATUS}" não encontrada no campo Status via fallback.`);
+                    return;
+                  }
+                  
+                  const itemNode = project.items.nodes.find(n => n.content && n.content.number === issueNumber);
+                  if (itemNode) {
+                    console.log(`Item #${issueNumber} encontrado no projeto (ID: ${itemNode.id}). Movendo para "${TARGET_STATUS}"...`);
+                    const mutationResult = await github.graphql(`
+                      mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+                        updateProjectV2ItemFieldValue(input: {
+                          projectId: $project, itemId: $item,
+                          fieldId: $field, value: { singleSelectOptionId: $option }
+                        }) { projectV2Item { id } }
+                      }
+                    `, {
+                      project: project.id,
+                      item: itemNode.id,
+                      field: project.field.id,
+                      option: targetOption.id
+                    });
+                    console.log('[SUCESSO] Mutação do fallback concluída:', JSON.stringify(mutationResult));
+                  } else {
+                    console.log(`Issue #${issueNumber} não encontrada entre os itens do projeto no fallback. Ela precisa ser adicionada ao board manualmente ou via outro action.`);
+                  }
+                } else {
+                  console.log(`Projeto V2 #${PROJECT_NUMBER} não encontrado para ${context.repo.owner} via fallback.`);
+                }
+              } catch (error) {
+                console.error("Erro na query de fallback:", error.message);
+              }
+              return;
+            }
+
+            // [MELHORIA A] Fluxo original com logs detalhados
+            for (const item of items) {
+              console.log(`\nVerificando item no projeto ID: ${item.project.id}`);
+              
+              const fieldValues = item.fieldValues?.nodes || [];
+              console.log(`Encontrados ${fieldValues.length} valores de campo preenchidos neste item.`);
+              
+              let statusUpdated = false;
+              
+              for (const fv of fieldValues) {
+                if (fv.field) {
+                  console.log(` - Campo detectado: ${fv.field.name} (ID: ${fv.field.id})`);
+                } else {
+                  console.log(` - Nó de valor de campo sem nome retornado:`, JSON.stringify(fv));
+                }
+                
+                // [MELHORIA C] Verifica exatamente 'Status'
+                if (fv.field && fv.field.name === 'Status') {
+                  console.log(`Status atual encontrado. Opções disponíveis no projeto:`, fv.field.options.map(o => o.name).join(', '));
+                  const targetOpt = fv.field.options.find(o => o.name === TARGET_STATUS);
+                  
+                  if (!targetOpt) {
+                    console.log(`[ERRO] Opção "${TARGET_STATUS}" não encontrada nas configurações do projeto.`);
+                    continue;
+                  }
+
+                  console.log(`Movendo para "${TARGET_STATUS}" (ID: ${targetOpt.id})...`);
+                  try {
+                    const mutationResult = await github.graphql(`
+                      mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+                        updateProjectV2ItemFieldValue(input: {
+                          projectId: $project, itemId: $item,
+                          fieldId: $field, value: { singleSelectOptionId: $option }
+                        }) { projectV2Item { id } }
+                      }
+                    `, {
+                      project: item.project.id,
+                      item: item.id,
+                      field: fv.field.id,
+                      option: targetOpt.id
+                    });
+                    console.log('[SUCESSO] Resultado da mutação:', JSON.stringify(mutationResult));
+                    statusUpdated = true;
+                  } catch (err) {
+                    console.error('[ERRO] Falha ao executar a mutação:', err);
+                  }
+                }
+              }
+              
+              // [MELHORIA D] Caso a issue esteja no board, mas "Status" nunca foi alterado, o node de Status não vem no fieldValues
+              if (!statusUpdated) {
+                console.log(`[AVISO] O campo "Status" não foi retornado nos fieldValues da issue. Isso ocorre se a issue nunca teve um status preenchido.`);
+                console.log(`Buscando a definição do campo "Status" diretamente no projeto (ID: ${item.project.id})...`);
+                try {
+                  const projResult = await github.graphql(`
+                    query($projectId: ID!) {
+                      node(id: $projectId) {
+                        ... on ProjectV2 {
+                          field(name: "Status") {
+                            ... on ProjectV2SingleSelectField {
+                              id
+                              options { id name }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  `, { projectId: item.project.id });
+                  
+                  const field = projResult.node?.field;
+                  if (field) {
+                    const targetOpt = field.options.find(o => o.name === TARGET_STATUS);
+                    if (targetOpt) {
+                      console.log(`Campo Status encontrado. Movendo para "${TARGET_STATUS}"...`);
+                      const mutationResult = await github.graphql(`
+                        mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+                          updateProjectV2ItemFieldValue(input: {
+                            projectId: $project, itemId: $item,
+                            fieldId: $field, value: { singleSelectOptionId: $option }
+                          }) { projectV2Item { id } }
+                        }
+                      `, {
+                        project: item.project.id,
+                        item: item.id,
+                        field: field.id,
+                        option: targetOpt.id
+                      });
+                      console.log('[SUCESSO] Mutação via busca direta concluída:', JSON.stringify(mutationResult));
+                    } else {
+                      console.log(`[ERRO] Opção "${TARGET_STATUS}" não encontrada nas configurações do projeto.`);
+                    }
+                  } else {
+                    console.log('[ERRO] Campo "Status" não encontrado no projeto usando busca direta.');
+                  }
+                } catch(err) {
+                  console.error('[ERRO] Falha ao buscar o campo Status diretamente no projeto:', err);
                 }
               }
             }
