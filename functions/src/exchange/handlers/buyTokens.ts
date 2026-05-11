@@ -40,7 +40,7 @@ export const buyTokens = functions.https.onCall(async (request) => {
       const tokensDisponiveis = exchangeData.tokensDisponiveis || 0;
       const capitalArrecadado = exchangeData.capitalArrecadado || 0;
 
-      const custoTotal = precoAtual * quantidade;
+      const custoTotal = Number((precoAtual * quantidade).toFixed(2));
 
       const saldoData = carteiraSnap.exists ? carteiraSnap.data() : { saldo: 0 };
       const saldo = saldoData?.saldo || 0;
@@ -53,12 +53,12 @@ export const buyTokens = functions.https.onCall(async (request) => {
         throw new functions.https.HttpsError("failed-precondition", "Liquidez insuficiente.");
       }
 
-      const novoSaldo = saldo - custoTotal;
-      const novoCapitalArrecadado = capitalArrecadado + custoTotal;
+      const novoSaldo = Number((saldo - custoTotal).toFixed(2));
+      const novoCapitalArrecadado = Number((capitalArrecadado + custoTotal).toFixed(2));
       const novosTokensDisponiveis = tokensDisponiveis - quantidade;
       
       const novoPreco = novosTokensDisponiveis > 0 
-        ? novoCapitalArrecadado / novosTokensDisponiveis 
+        ? Number((novoCapitalArrecadado / novosTokensDisponiveis).toFixed(4)) 
         : precoAtual;
 
       t.set(carteiraRef, { saldo: novoSaldo }, { merge: true });
@@ -69,7 +69,7 @@ export const buyTokens = functions.https.onCall(async (request) => {
 
       t.set(investimentoRef, {
         tokensComprados: tokensCompradosAtuais + quantidade,
-        valorPago: valorPagoAtual + custoTotal
+        valorPago: Number((valorPagoAtual + custoTotal).toFixed(2))
       }, { merge: true });
 
       t.update(exchangeRef, {

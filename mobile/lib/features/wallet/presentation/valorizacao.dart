@@ -173,7 +173,7 @@ import 'package:fl_chart/fl_chart.dart';
                          dotData: const FlDotData(show: false), 
                          belowBarData: BarAreaData( 
                            show: true, 
-                           color: _purple.withOpacity(0.16), 
+                           color: _purple.withValues(alpha: 0.16), 
                          ), 
                        ), 
                      ], 

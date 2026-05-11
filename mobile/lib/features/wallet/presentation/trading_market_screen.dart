@@ -7,7 +7,8 @@ import 'package:mobile/core/routes/app_routes.dart';
 import 'package:mobile/features/wallet/presentation/trade_market.dart' as camila_market;
 
 class BalcaoNegociacaoPage extends StatefulWidget {
-  const BalcaoNegociacaoPage({super.key});
+  final String startupId;
+  const BalcaoNegociacaoPage({super.key, required this.startupId});
 
   @override
   State<BalcaoNegociacaoPage> createState() => _BalcaoNegociacaoPageState();
@@ -15,8 +16,8 @@ class BalcaoNegociacaoPage extends StatefulWidget {
 
 class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
   final TextEditingController _quantidadeController = TextEditingController();
-  double _saldoByd = 0;
-  List<Map<String, dynamic>> _transacoes = [];
+  double _saldo = 0;
+  final List<Map<String, dynamic>> _transacoes = [];
   bool _loading = true;
 
   final List<Map<String, dynamic>> _ofertas = [
@@ -44,7 +45,7 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
       final result = await callable.call();
       if (!mounted) return;
       setState(() {
-        _saldoByd = (result.data['saldo'] as num).toDouble();
+        _saldo = (result.data['saldo'] as num).toDouble();
         _loading = false;
       });
     } catch (e) {
@@ -63,30 +64,48 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
     required double quantidade,
   }) async {
     final isCompra = acao == 'Comprar';
-    final novoSaldo = isCompra ? _saldoByd - quantidade : _saldoByd + quantidade;
-    if (novoSaldo < 0) {
+
+    if (!isCompra) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Saldo insuficiente para compra')),
+        const SnackBar(content: Text('Venda ainda não implementada.')),
       );
       return;
     }
 
-    setState(() {
-      _saldoByd = novoSaldo;
-      _transacoes.insert(0, {
-        'title': isCompra ? 'Compra no balcao' : 'Venda no balcao',
-        'subtitle': 'Ordem simulada executada',
-        'value': '${isCompra ? '-' : '+'}${quantidade.toStringAsFixed(2)} BYD',
-        'kind': isCompra ? 'buy' : 'sell',
-        'createdAt': DateTime.now().toIso8601String(),
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('exchange-buyTokens');
+      await callable.call({
+        'startupId': widget.startupId,
+        'quantidade': quantidade.toInt(),
       });
-    });
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Ordem de $acao enviada ao Balcao!')),
-    );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Compra realizada com sucesso!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      _loadCarteira();
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? e.details?.toString() ?? 'Erro na transação'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro inesperado: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _showDialogNegociacao(String acao) {
@@ -94,7 +113,7 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('$acao Tokens BYD'),
+        title: Text('$acao Tokens'),
         content: TextField(
           controller: _quantidadeController,
           decoration: const InputDecoration(labelText: 'Quantidade de Tokens'),
@@ -151,7 +170,7 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'Saldo atual: ${_saldoByd.toStringAsFixed(2)} BYD',
+            'Saldo atual: ${_saldo.toStringAsFixed(2)}',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -225,7 +244,7 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold)),
-          Text('Qtd (BYD)', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text('Qtd', style: TextStyle(fontWeight: FontWeight.bold)),
           Text('Preco (R\$)', style: TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),

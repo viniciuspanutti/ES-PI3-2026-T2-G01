@@ -103,7 +103,7 @@ import 'package:flutter/material.dart';
                              color: const Color(0xFF4B0082), 
                              barWidth: 4, 
                              dotData: const FlDotData(show: true), 
-                             belowBarData: BarAreaData(show: true, color: const Color(0xFF4B0082).withOpacity(0.1)), 
+                             belowBarData: BarAreaData(show: true, color: const Color(0xFF4B0082).withValues(alpha: 0.1)), 
                            ), 
                          ], 
                        ), 

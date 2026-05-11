@@ -54,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             subtitle: const Text('Exige um código extra ao fazer login.'),
             value: _isMfaEnabled,
             onChanged: _toggleMfa,
-            activeColor: const Color(0xFF512DA8),
+            activeThumbColor: const Color(0xFF512DA8),
           ),
           const SizedBox(height: 20),
           ElevatedButton(

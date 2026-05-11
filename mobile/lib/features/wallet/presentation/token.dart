@@ -108,7 +108,7 @@ class _ValorizacaoPageState extends State<ValorizacaoPage> {
           dotData: const FlDotData(show: false),
           belowBarData: BarAreaData(
             show: true,
-            color: Colors.deepPurple.withOpacity(0.2),
+            color: Colors.deepPurple.withValues(alpha: 0.2),
           ),
         ),
       ],
