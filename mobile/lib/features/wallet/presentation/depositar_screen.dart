@@ -79,9 +79,9 @@ class _DepositarScreenState extends State<DepositarScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _CardValor(),
+            _cardValor(),
             const SizedBox(height: 16),
-            _CardMetodo(),
+            _cardMetodo(),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -107,7 +107,7 @@ class _DepositarScreenState extends State<DepositarScreen> {
     );
   }
 
-  Widget _CardValor() {
+  Widget _cardValor() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -188,7 +188,7 @@ class _DepositarScreenState extends State<DepositarScreen> {
     );
   }
 
-  Widget _CardMetodo() {
+  Widget _cardMetodo() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

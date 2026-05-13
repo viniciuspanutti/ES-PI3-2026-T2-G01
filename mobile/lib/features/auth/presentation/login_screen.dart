@@ -64,6 +64,7 @@ class _LoginPageState extends State<LoginPage> {
           final random = Random();
           final code = (100000 + random.nextInt(900000)).toString();
 
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Enviando código para seu e-mail...'),
@@ -93,6 +94,7 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       // ── Navegação pós-login se não tiver MFA ────────────────────────
+      if (!mounted) return;
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.mainRoute, (route) => false);
     } catch (e) {
       if (!mounted) return;

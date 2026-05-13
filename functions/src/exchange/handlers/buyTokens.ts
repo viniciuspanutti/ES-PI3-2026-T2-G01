@@ -1,46 +1,89 @@
 /**Vinícius
- * Explicação do código ->
+ * Explicação do código -> Refatorado para usar AMM e transações atômicas unificadas no Firebase.
  */
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 
 export const buyTokens = functions.https.onCall(async (request) => {
-  // Agora o auth vem de dentro do objeto 'request'
   if (!request.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Log in necessário.");
   }
 
   const userId = request.auth.uid;
-  // Os dados do body também vêm de dentro de 'request.data'
-  const { startupId, tokenQuantity } = request.data;
+  const { startupId, quantidade } = request.data;
+
+  if (!startupId || typeof quantidade !== "number" || quantidade <= 0) {
+    throw new functions.https.HttpsError("invalid-argument", "Parâmetros inválidos.");
+  }
+
   const db = admin.firestore();
 
   try {
     await db.runTransaction(async (t) => {
-      const startupRef = db.collection("startups").doc(startupId);
-      const walletRef = db.collection("wallets").doc(userId);
+      const carteiraRef = db.collection("users").doc(userId).collection("carteira").doc("saldo");
+      const investimentoRef = db.collection("users").doc(userId).collection("investimentos").doc(startupId);
+      const exchangeRef = db.collection("exchange").doc(startupId);
 
-      const startupSnap = await t.get(startupRef);
-      if (!startupSnap.exists) throw new Error("Startup não encontrada.");
+      const [carteiraSnap, investimentoSnap, exchangeSnap] = await Promise.all([
+        t.get(carteiraRef),
+        t.get(investimentoRef),
+        t.get(exchangeRef)
+      ]);
 
-      const price = startupSnap.data()?.currentTokenPrice;
-      const totalCost = price * tokenQuantity;
+      if (!exchangeSnap.exists) {
+        throw new functions.https.HttpsError("failed-precondition", "Exchange não encontrada para esta startup.");
+      }
 
-      const walletSnap = await t.get(walletRef);
-      const balance = walletSnap.exists ? walletSnap.data()?.balance : 0;
+      const exchangeData = exchangeSnap.data()!;
+      const precoAtual = exchangeData.precoAtual || 0;
+      const tokensDisponiveis = exchangeData.tokensDisponiveis || 0;
+      const capitalArrecadado = exchangeData.capitalArrecadado || 0;
 
-      if (balance < totalCost) throw new Error("Saldo insuficiente na carteira.");
+      const custoTotal = Number((precoAtual * quantidade).toFixed(2));
 
-      const currentTokens = walletSnap.exists ? walletSnap.data()?.portfolio?.[startupId] || 0 : 0;
+      const saldoData = carteiraSnap.exists ? carteiraSnap.data() : { saldo: 0 };
+      const saldo = saldoData?.saldo || 0;
 
-      t.set(walletRef, {
-        balance: balance - totalCost,
-        portfolio: { [startupId]: currentTokens + tokenQuantity }
+      if (saldo < custoTotal) {
+        throw new functions.https.HttpsError("failed-precondition", "Saldo insuficiente.");
+      }
+
+      if (tokensDisponiveis < quantidade) {
+        throw new functions.https.HttpsError("failed-precondition", "Liquidez insuficiente.");
+      }
+
+      const novoSaldo = Number((saldo - custoTotal).toFixed(2));
+      const novoCapitalArrecadado = Number((capitalArrecadado + custoTotal).toFixed(2));
+      const novosTokensDisponiveis = tokensDisponiveis - quantidade;
+      
+      const novoPreco = novosTokensDisponiveis > 0 
+        ? Number((novoCapitalArrecadado / novosTokensDisponiveis).toFixed(4)) 
+        : precoAtual;
+
+      t.set(carteiraRef, { saldo: novoSaldo }, { merge: true });
+
+      const invData = investimentoSnap.exists ? investimentoSnap.data() : {};
+      const tokensCompradosAtuais = invData?.tokensComprados || 0;
+      const valorPagoAtual = invData?.valorPago || 0;
+
+      t.set(investimentoRef, {
+        tokensComprados: tokensCompradosAtuais + quantidade,
+        valorPago: Number((valorPagoAtual + custoTotal).toFixed(2))
       }, { merge: true });
+
+      t.update(exchangeRef, {
+        tokensDisponiveis: novosTokensDisponiveis,
+        capitalArrecadado: novoCapitalArrecadado,
+        precoAtual: novoPreco
+      });
     });
+
     return { status: "success" };
   } catch (error: any) {
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
     throw new functions.https.HttpsError("failed-precondition", error.message);
   }
 });

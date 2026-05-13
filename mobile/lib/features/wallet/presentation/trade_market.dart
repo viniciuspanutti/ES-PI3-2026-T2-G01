@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mobile/features/wallet/presentation/token.dart' as token_page;
 
 class BalcaoNegociacaoPage extends StatefulWidget {
@@ -62,7 +63,7 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
       'setor': 'Educação',
     },
   ];
-  /**Usando o Filtro de Catálogo que faltou de implementar*/
+  /// Usando o Filtro de Catálogo que faltou de implementar
 
   void _abrirFiltros() {
     showDialog(
@@ -221,7 +222,7 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
+                                color: Colors.black.withValues(alpha: 0.04),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -342,6 +343,8 @@ class AssetDetailsScreen extends StatefulWidget {
 
 class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
   String _selectedPeriod = 'Diário';
+  final TextEditingController _quantidadeController = TextEditingController();
+  bool _isLoading = false;
 
   // --- ESTRUTURA PARA O BACKEND ---
   // Seu amigo vai substituir essas listas estáticas por dados do Firebase/API
@@ -360,67 +363,148 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
     },
   ];
 
-  // Função para simular a ação de Investir
+  @override
+  void dispose() {
+    _quantidadeController.dispose();
+    super.dispose();
+  }
+
+  String _getStartupId(String ticker) {
+    switch (ticker) {
+      case 'AGRI3': return 'agrisense';
+      case 'DEVM3': return 'devmatch';
+      case 'ECYC1': return 'ecocycle';
+      case 'HBIT3': return 'healthbit';
+      case 'SCMP3': return 'smartcampus';
+      default: return 'agrisense';
+    }
+  }
+
+  // Integração real com a Cloud Function exchange-buyTokens (AMM)
   void _abrirModalInvestir() {
+    _quantidadeController.clear();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Investir em ${widget.startup['ticker']}",
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+      builder: (bottomSheetContext) {
+        return StatefulBuilder(
+          builder: (builderContext, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(bottomSheetContext).viewInsets.bottom,
               ),
-              const SizedBox(height: 20),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: "Quantidade de Tokens",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Icon(Icons.add_chart),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF512DA8),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Ordem de compra enviada ao Balcão!"),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Investir em ${widget.startup['ticker']}",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  },
-                  child: const Text(
-                    "Confirmar Compra Simulada",
-                    style: TextStyle(color: Colors.white),
-                  ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _quantidadeController,
+                      decoration: InputDecoration(
+                        labelText: "Quantidade de Tokens",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.add_chart),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF512DA8),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                        ),
+                        onPressed: _isLoading
+                            ? null
+                            : () async {
+                                final quantidadeTexto = _quantidadeController.text.replaceAll(',', '.');
+                                final quantidade = int.tryParse(quantidadeTexto) ?? 0;
+
+                                if (quantidade <= 0) {
+                                  ScaffoldMessenger.of(builderContext).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Informe uma quantidade válida (número inteiro > 0).'),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setModalState(() => _isLoading = true);
+
+                                try {
+                                  final startupId = _getStartupId(widget.startup['ticker']);
+                                  final callable = FirebaseFunctions.instance
+                                      .httpsCallable('exchange-buyTokens');
+                                  await callable.call({
+                                    'startupId': startupId,
+                                    'quantidade': quantidade,
+                                  });
+
+                                  if (!mounted) return;
+                                  Navigator.pop(builderContext);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Ordem de compra executada com sucesso!'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                } on FirebaseFunctionsException catch (e) {
+                                  setModalState(() => _isLoading = false);
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(builderContext).showSnackBar(
+                                    SnackBar(
+                                      content: Text(e.message ?? e.details?.toString() ?? 'Erro na transação.'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                } catch (e) {
+                                  setModalState(() => _isLoading = false);
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(builderContext).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Erro inesperado: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              },
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                "Confirmar Compra",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -705,7 +789,7 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: const Color(0xFF512DA8).withOpacity(0.1),
+                      color: const Color(0xFF512DA8).withValues(alpha: 0.1),
                     ),
                   ),
                 ],
@@ -770,7 +854,7 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
           ),
           const SizedBox(height: 10),
           // Passando o item completo do Map para a função
-          ..._historicoFake.map((item) => _buildTransactionTile(item)).toList(),
+          ..._historicoFake.map((item) => _buildTransactionTile(item)),
         ],
       ),
     );
@@ -779,10 +863,12 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
   // O Gráfico agora recebe o período e muda os "Spots"
   List<FlSpot> _generateDummyData(String period) {
     // Quando o backend chegar, seu amigo mudará esses retornos
-    if (period == 'Diário')
+    if (period == 'Diário') {
       return [const FlSpot(0, 1), const FlSpot(1, 1.2), const FlSpot(2, 1.8)];
-    if (period == 'Mensal')
+    }
+    if (period == 'Mensal') {
       return [const FlSpot(0, 5), const FlSpot(1, 2), const FlSpot(2, 8)];
+    }
     return [
       const FlSpot(0, 1),
       const FlSpot(1, 1.5),
@@ -869,7 +955,7 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.1),
+          color: Colors.green.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
         child: Icon(item['icon'], color: Colors.green, size: 18),
