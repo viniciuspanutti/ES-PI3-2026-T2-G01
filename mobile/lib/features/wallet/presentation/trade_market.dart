@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mobile/features/wallet/presentation/token.dart' as token_page;
 
 class BalcaoNegociacaoPage extends StatefulWidget {
@@ -773,28 +774,106 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: 200,
-            child: LineChart(
-              LineChartData(
-                gridData: const FlGridData(show: false),
-                titlesData: const FlTitlesData(show: false),
-                borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: _generateDummyData(_selectedPeriod),
-                    isCurved: true,
-                    color: const Color(0xFF512DA8),
-                    barWidth: 3,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: const Color(0xFF512DA8).withValues(alpha: 0.1),
-                    ),
+          const SizedBox(height: 20),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('exchange')
+                .doc(_getStartupId(widget.startup['ticker']))
+                .collection('historicoPrecos')
+                .orderBy('data', descending: false)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox(
+                  height: 200,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snapshot.hasError) {
+                return const SizedBox(
+                  height: 200,
+                  child: Center(child: Text("Erro ao carregar gráfico")),
+                );
+              }
+
+              final docs = snapshot.data?.docs ?? [];
+              if (docs.isEmpty) {
+                return const SizedBox(
+                  height: 200,
+                  child: Center(child: Text("Sem dados históricos")),
+                );
+              }
+
+              final now = DateTime.now();
+              DateTime dataLimite;
+
+              switch (_selectedPeriod) {
+                case 'Diário':
+                  dataLimite = now.subtract(const Duration(days: 7));
+                  break;
+                case 'Semanal':
+                  dataLimite = now.subtract(const Duration(days: 84));
+                  break;
+                case 'Mensal':
+                  dataLimite = now.subtract(const Duration(days: 30));
+                  break;
+                case '6 meses':
+                  dataLimite = now.subtract(const Duration(days: 180));
+                  break;
+                case 'YTD':
+                  dataLimite = DateTime(now.year, 1, 1);
+                  break;
+                default:
+                  dataLimite = now.subtract(const Duration(days: 7));
+              }
+
+              final filteredDocs = docs.where((doc) {
+                final data = doc['data'] as Timestamp;
+                return data.toDate().isAfter(dataLimite) || data.toDate().isAtSameMomentAs(dataLimite);
+              }).toList();
+
+              List<QueryDocumentSnapshot> finalDocs = filteredDocs;
+              if (_selectedPeriod == 'Semanal') {
+                finalDocs = [];
+                for (int i = 0; i < filteredDocs.length; i += 7) {
+                  finalDocs.add(filteredDocs[i]);
+                }
+                if (finalDocs.isNotEmpty && filteredDocs.isNotEmpty && finalDocs.last.id != filteredDocs.last.id) {
+                  finalDocs.add(filteredDocs.last);
+                }
+              }
+
+              final spots = finalDocs.asMap().entries.map((entry) {
+                final index = entry.key;
+                final doc = entry.value;
+                final preco = (doc['preco'] as num).toDouble();
+                return FlSpot(index.toDouble(), preco);
+              }).toList();
+
+              return SizedBox(
+                height: 200,
+                child: LineChart(
+                  LineChartData(
+                    gridData: const FlGridData(show: false),
+                    titlesData: const FlTitlesData(show: false),
+                    borderData: FlBorderData(show: false),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: spots.isEmpty ? [const FlSpot(0, 0)] : spots,
+                        isCurved: true,
+                        color: const Color(0xFF512DA8),
+                        barWidth: 3,
+                        dotData: const FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          color: const Color(0xFF512DA8).withValues(alpha: 0.1),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -860,22 +939,7 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
     );
   }
 
-  // O Gráfico agora recebe o período e muda os "Spots"
-  List<FlSpot> _generateDummyData(String period) {
-    // Quando o backend chegar, seu amigo mudará esses retornos
-    if (period == 'Diário') {
-      return [const FlSpot(0, 1), const FlSpot(1, 1.2), const FlSpot(2, 1.8)];
-    }
-    if (period == 'Mensal') {
-      return [const FlSpot(0, 5), const FlSpot(1, 2), const FlSpot(2, 8)];
-    }
-    return [
-      const FlSpot(0, 1),
-      const FlSpot(1, 1.5),
-      const FlSpot(2, 1.4),
-      const FlSpot(3, 2),
-    ];
-  }
+
 
   Widget _tableHeader(String label) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),

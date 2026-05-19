@@ -2,7 +2,7 @@
 * * Descrição ->  nossos dados das startups vindo do firestore
 */
 
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import {
   StartupDocument,
   StartupListItem,
@@ -264,6 +264,34 @@ export async function seedDemoStartups(): Promise<string[]> {
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
+
+      // ETAPA 1: Gerar 365 dias de histórico estatístico
+      const historicoCollection = exchangeRef.collection("historicoPrecos");
+      const today = new Date();
+      let precoSimulado = 5.0; // O preço atual deve ser obrigatoriamente 5.00
+      const seedVal = startup.id.length + 10;
+
+      for (let i = 0; i <= 365; i++) {
+        const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dataDoc = `${yyyy}-${mm}-${dd}`;
+
+        batch.set(historicoCollection.doc(dataDoc), {
+          data: Timestamp.fromDate(d),
+          preco: Number(precoSimulado.toFixed(4))
+        });
+
+        // Movimento Browniano Geométrico reverso para o passado
+        // Variações diárias baseadas no ticker/id
+        const rand = Math.sin(seedVal + i) * 10000;
+        const uniform = rand - Math.floor(rand);
+        const shock = (uniform - 0.5) * 0.1; // variação de -5% a +5%
+        
+        precoSimulado = precoSimulado * (1 - shock);
+        if (precoSimulado <= 0) precoSimulado = 0.01;
+      }
     }
   }
   await batch.commit();

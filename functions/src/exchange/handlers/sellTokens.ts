@@ -1,11 +1,10 @@
 /**Vinícius
- * Explicação do código -> Refatorado para usar AMM e transações atômicas unificadas no Firebase.
+ * Explicação: com gravação do histórico de preços
  */
-
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 
-export const buyTokens = functions.https.onCall(async (request) => {
+export const sellTokens = functions.https.onCall(async (request) => {
   if (!request.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Log in necessário.");
   }
@@ -35,41 +34,43 @@ export const buyTokens = functions.https.onCall(async (request) => {
         throw new functions.https.HttpsError("failed-precondition", "Exchange não encontrada para esta startup.");
       }
 
+      const invData = investimentoSnap.exists ? investimentoSnap.data() : {};
+      const tokensPossuidos = invData?.tokensComprados || 0;
+      if (tokensPossuidos < quantidade) {
+        throw new functions.https.HttpsError("failed-precondition", "Tokens insuficientes para venda.");
+      }
+
       const exchangeData = exchangeSnap.data()!;
       const precoAtual = exchangeData.precoAtual || 0;
       const tokensDisponiveis = exchangeData.tokensDisponiveis || 0;
       const capitalArrecadado = exchangeData.capitalArrecadado || 0;
 
-      const custoTotal = Number((precoAtual * quantidade).toFixed(2));
+      const valorVenda = Number((precoAtual * quantidade).toFixed(2));
+
+      if (capitalArrecadado < valorVenda) {
+        throw new functions.https.HttpsError("failed-precondition", "Liquidez insuficiente no pool.");
+      }
 
       const saldoData = carteiraSnap.exists ? carteiraSnap.data() : { saldo: 0 };
       const saldo = saldoData?.saldo || 0;
 
-      if (saldo < custoTotal) {
-        throw new functions.https.HttpsError("failed-precondition", "Saldo insuficiente.");
-      }
+      const novoSaldo = Number((saldo + valorVenda).toFixed(2));
+      const novoCapitalArrecadado = Number((capitalArrecadado - valorVenda).toFixed(2));
+      const novosTokensDisponiveis = tokensDisponiveis + quantidade;
 
-      if (tokensDisponiveis < quantidade) {
-        throw new functions.https.HttpsError("failed-precondition", "Liquidez insuficiente.");
-      }
-
-      const novoSaldo = Number((saldo - custoTotal).toFixed(2));
-      const novoCapitalArrecadado = Number((capitalArrecadado + custoTotal).toFixed(2));
-      const novosTokensDisponiveis = tokensDisponiveis - quantidade;
-      
-      const novoPreco = novosTokensDisponiveis > 0 
-        ? Number((novoCapitalArrecadado / novosTokensDisponiveis).toFixed(4)) 
+      const novoPreco = novosTokensDisponiveis > 0
+        ? Number((novoCapitalArrecadado / novosTokensDisponiveis).toFixed(4))
         : precoAtual;
 
       t.set(carteiraRef, { saldo: novoSaldo }, { merge: true });
 
-      const invData = investimentoSnap.exists ? investimentoSnap.data() : {};
-      const tokensCompradosAtuais = invData?.tokensComprados || 0;
       const valorPagoAtual = invData?.valorPago || 0;
+      const proporcao = quantidade / tokensPossuidos;
+      const reducaoValorPago = valorPagoAtual * proporcao;
 
       t.set(investimentoRef, {
-        tokensComprados: tokensCompradosAtuais + quantidade,
-        valorPago: Number((valorPagoAtual + custoTotal).toFixed(2))
+        tokensComprados: tokensPossuidos - quantidade,
+        valorPago: Number((valorPagoAtual - reducaoValorPago).toFixed(2))
       }, { merge: true });
 
       t.update(exchangeRef, {
