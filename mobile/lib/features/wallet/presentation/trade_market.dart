@@ -1012,7 +1012,7 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Hoje",
+            "Histórico",
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
           ),
           const SizedBox(height: 10),

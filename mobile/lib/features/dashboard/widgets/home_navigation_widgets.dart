@@ -224,24 +224,6 @@ class _WalletCardState extends State<WalletCard> {
             ],
           ),
           const SizedBox(height: 9),
-          const Row(
-            children: [
-              Icon(
-                CupertinoIcons.building_2_fill,
-                color: Colors.white70,
-                size: 12,
-              ),
-              SizedBox(width: 6),
-              Text(
-                '05 23-12 - 856988490',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 20),
           Row(
             children: [
