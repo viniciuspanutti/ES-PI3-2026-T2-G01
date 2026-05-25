@@ -92,6 +92,17 @@ export const sellTokens = functions.https.onCall(async (request) => {
         data: admin.firestore.Timestamp.now(),
         preco: novoPreco
       }, { merge: true });
+
+      const startupRef = db.collection("startups").doc(startupId);
+      const historicoRef = startupRef.collection("Histórico").doc();
+      t.set(historicoRef, {
+        "Preco Vendido": valorVenda,
+        "Tokens Vendidos": quantidade,
+        "Valor Token": precoAtual,
+        data: admin.firestore.Timestamp.now(),
+        status: "Sucesso",
+        tipo: "Venda",
+      });
     });
 
     return { status: "success" };

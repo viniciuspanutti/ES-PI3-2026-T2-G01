@@ -929,43 +929,80 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
 
   // Livro de Ofertas conforme solicitado
   Widget _buildOrderBook() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Livro de Ofertas (Mercado)",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF4B0082),
-            ),
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Livro de Ofertas (Mercado)",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF4B0082),
           ),
-          const SizedBox(height: 15),
-          Table(
-            columnWidths: const {
-              0: FlexColumnWidth(1),
-              1: FlexColumnWidth(1),
-              2: FlexColumnWidth(1),
-            },
-            children: [
-              TableRow(
-                children: [
-                  _tableHeader("Tipo"),
-                  _tableHeader("Qtd (BYD)"),
-                  _tableHeader("Preço (R\$)"),
-                ],
-              ),
-              _orderRow("Venda", "50", "6.15", Colors.red),
-              _orderRow("Venda", "120", "6.12", Colors.red),
-              _orderRow("Compra", "80", "6.08", Colors.green),
-              _orderRow("Compra", "200", "6.05", Colors.green),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 15),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('startups')
+              .doc(widget.startup['id'] ?? _getStartupId(widget.startup['ticker']))
+              .collection('Histórico')
+              .orderBy('data', descending: true)
+              .limit(4)
+              .snapshots(),
+          builder: (context, snapshot) {
+            final docs = snapshot.data?.docs ?? [];
+            return Table(
+              columnWidths: const {
+                0: FlexColumnWidth(1),
+                1: FlexColumnWidth(1),
+                2: FlexColumnWidth(1),
+              },
+              children: [
+                TableRow(
+                  children: [
+                    _tableHeader("Tipo"),
+                    _tableHeader("Qtd"),
+                    _tableHeader("Preço (R\$)"),
+                  ],
+                ),
+                if (docs.isEmpty)
+                  TableRow(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          'Nenhuma transação ainda.',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                      ),
+                      const SizedBox(),
+                      const SizedBox(),
+                    ],
+                  )
+                else
+                  ...docs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final tipo = data['tipo'] ?? 'Compra';
+                    final qtd = tipo == 'Venda'
+                        ? data['Tokens Vendidos']
+                        : data['Tokens Comprados'];
+                    final valor = data['Valor Token'];
+                    return _orderRow(
+                      tipo,
+                      (qtd ?? 0).toString(),
+                      (valor as num).toStringAsFixed(2),
+                      tipo == 'Venda' ? Colors.red : Colors.green,
+                    );
+                  }),
+              ],
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
 
   // Widget de Histórico que usa a lista _historicoFake
   Widget _buildDynamicHistory() {
