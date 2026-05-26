@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mobile/core/routes/app_routes.dart';
 import 'package:mobile/features/wallet/presentation/trade_market.dart' as camila_market;
 
@@ -20,17 +21,31 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
   final List<Map<String, dynamic>> _transacoes = [];
   bool _loading = true;
 
-  final List<Map<String, dynamic>> _ofertas = [
-    {'tipo': 'Venda', 'qtd': '50', 'valor': '6.15', 'cor': Colors.red},
-    {'tipo': 'Venda', 'qtd': '120', 'valor': '6.12', 'cor': Colors.red},
-    {'tipo': 'Compra', 'qtd': '80', 'valor': '6.08', 'cor': Colors.green},
-    {'tipo': 'Compra', 'qtd': '200', 'valor': '6.05', 'cor': Colors.green},
-  ];
+  late Stream<List<Map<String, dynamic>>> _ofertasStream;
 
   @override
   void initState() {
     super.initState();
     _loadCarteira();
+    _ofertasStream = FirebaseFirestore.instance
+        .collection('startups')
+        .doc(widget.startupId)
+        .collection('Histórico')
+        .orderBy('data', descending: true)
+        .limit(5)
+        .snapshots()
+        .map((snap) => snap.docs.map<Map<String, dynamic>>((doc) {
+              final data = doc.data();
+              final tipo = data['tipo'] ?? 'Compra';
+              final qtd = tipo == 'Venda' ? data['Tokens Vendidos'] : data['Tokens Comprados'];
+              final valor = data['Valor Token'];
+              return {
+                'tipo': tipo,
+                'qtd': (qtd ?? 0).toString(),
+                'valor': (valor as num).toStringAsFixed(2),
+                'cor': tipo == 'Venda' ? Colors.red : Colors.green,
+              };
+            }).toList());
   }
 
   @override
@@ -157,8 +172,8 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pushNamedAndRemoveUntil(
-              context, 
-              AppRoutes.mainRoute, 
+              context,
+              AppRoutes.mainRoute,
               (route) => false,
             );
           },
@@ -188,11 +203,23 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
               border: Border.all(color: Colors.grey[300]!),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Column(
-              children: [
-                _headerTabela(),
-                ..._ofertas.map(_itemOferta),
-              ],
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _ofertasStream,
+              builder: (context, snapshot) {
+                final ofertas = snapshot.data ?? [];
+                return Column(
+                  children: [
+                    _headerTabela(),
+                    if (ofertas.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('Nenhuma transação ainda.', style: TextStyle(color: Colors.grey)),
+                      )
+                    else
+                      ...ofertas.map(_itemOferta),
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(height: 20),
