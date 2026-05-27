@@ -6,7 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mobile/features/wallet/presentation/token.dart' as token_page;
+
 import 'package:intl/intl.dart';
 
 class BalcaoNegociacaoPage extends StatefulWidget {
@@ -734,33 +734,7 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 30),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const token_page.ValorizacaoPage(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.insights, color: Colors.white),
-                label: const Text(
-                  "Ver Performance Detalhada",
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF512DA8),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
             const SizedBox(height: 30),
 
             // 2. Dashboard preparado para novos valores
