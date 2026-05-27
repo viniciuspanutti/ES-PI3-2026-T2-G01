@@ -1,9 +1,29 @@
-# Node.js
-backend/node_modules/
-backend/.env
+# Node.js (Firebase Functions)
+functions/node_modules/
+functions/.env
+functions/dist/
+functions/*.log
+functions/.env.local
+functions/.env.production
 
-# Flutter
+# Flutter (Mobile)
 mobile/.dart_tool/
 mobile/build/
 mobile/.flutter-plugins
 mobile/.flutter-plugins-dependencies
+mobile/.idea/
+mobile/*.iml
+mobile/coverage/
+mobile/.packages
+mobile/.pub-cache/
+mobile/.pub/
+
+# IDEs e Ferramentas Locais (Sujeira de IA e editores)
+.idea/
+.agents/
+.claude/
+skills-lock.json
+
+# Sistema
+.DS_Store
+*.log
