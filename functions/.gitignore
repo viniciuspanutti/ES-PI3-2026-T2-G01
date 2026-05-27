@@ -1,0 +1,13 @@
+# Compiled JavaScript files
+lib/**/*.js
+lib/**/*.js.map
+
+# TypeScript v1 declaration files
+typings/
+
+# Node.js dependency directory
+node_modules/
+*.local
+
+# nao tirar isso do gitignore NUNCA, JAMAIS, se nao o mateus mata a gente (tom)
+.env
