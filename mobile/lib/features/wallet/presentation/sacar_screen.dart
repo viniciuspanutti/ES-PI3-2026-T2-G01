@@ -12,6 +12,7 @@ class _SacarScreenState extends State<SacarScreen> {
   static const primaryPurple = Color(0xFF6B33B4);
   final _valorController = TextEditingController();
   String _metodoSelecionado = 'debito';
+  bool _enviando = false;
 
   final _metodos = [
     {
@@ -50,6 +51,8 @@ class _SacarScreenState extends State<SacarScreen> {
       );
       return;
     }
+
+    setState(() => _enviando = true);
 
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'us-central1');
@@ -97,7 +100,7 @@ class _SacarScreenState extends State<SacarScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _confirmar,
+                onPressed: _enviando ? null : _confirmar,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryPurple,
                   foregroundColor: Colors.white,
@@ -106,10 +109,19 @@ class _SacarScreenState extends State<SacarScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  'Confirmar saque',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
+                child: _enviando
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Confirmar saque',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
               ),
             ),
           ],

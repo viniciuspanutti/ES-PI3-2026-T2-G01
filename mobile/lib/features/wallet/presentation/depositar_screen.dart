@@ -12,6 +12,7 @@ class _DepositarScreenState extends State<DepositarScreen> {
   static const primaryPurple = Color(0xFF6B33B4);
   final _valorController = TextEditingController();
   String? _metodoSelecionado;
+  bool _enviando = false; 
 
   @override
   void dispose() {
@@ -39,6 +40,8 @@ class _DepositarScreenState extends State<DepositarScreen> {
     );
     return;
   }
+
+  setState(() => _enviando = true);
 
   try {
     final functions = FirebaseFunctions.instanceFor(region: 'us-central1');
@@ -86,7 +89,7 @@ class _DepositarScreenState extends State<DepositarScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _confirmar,
+                onPressed: _enviando ? null : _confirmar,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryPurple,
                   foregroundColor: Colors.white,
@@ -95,10 +98,19 @@ class _DepositarScreenState extends State<DepositarScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  'Confirmar depósito',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
+                child: _enviando
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Confirmar depósito',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
               ),
             ),
           ],

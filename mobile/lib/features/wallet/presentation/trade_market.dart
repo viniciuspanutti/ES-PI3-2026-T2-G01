@@ -1,6 +1,7 @@
 // feito por camila fernandes costacurta RA:25012949
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -382,20 +383,6 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
 
   // --- ESTRUTURA PARA O BACKEND ---
   // Seu amigo vai substituir essas listas estáticas por dados do Firebase/API
-  final List<Map<String, dynamic>> _historicoFake = [
-    {
-      "titulo": "Compra",
-      "sub": "Via Balcão",
-      "valor": "+10",
-      "icon": Icons.shopping_cart,
-    },
-    {
-      "titulo": "Troca",
-      "sub": "Conversão Simulada",
-      "valor": "-5",
-      "icon": Icons.swap_horiz,
-    },
-  ];
 
   @override
   void dispose() {
@@ -416,6 +403,7 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
 
   // Integração real com a Cloud Function exchange-buyTokens (AMM)
   void _abrirModalInvestir() {
+    _isLoading = false;
     _quantidadeController.clear();
     showModalBottomSheet(
       context: context,
@@ -544,6 +532,7 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
 
   // Integração real com a Cloud Function exchange-sellTokens (AMM)
   void _abrirModalVender() {
+    _isLoading = false;
     _quantidadeController.clear();
     showModalBottomSheet(
       context: context,
@@ -692,29 +681,58 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
             const SizedBox(height: 20),
             // Valor grande do Token
             StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseAuth.instance.currentUser != null
-                  ? FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(FirebaseAuth.instance.currentUser!.uid)
-                      .collection('investimentos')
-                      .doc(widget.startup['id'] ?? _getStartupId(widget.startup['ticker']))
-                      .snapshots()
-                  : const Stream.empty(),
-              builder: (context, snapshot) {
-                final qtdReal = snapshot.data?.data() != null
-                    ? (snapshot.data!.data() as Map<String, dynamic>)['tokensComprados'] ?? 0
-                    : widget.startup['qtd']; // Fallback
+            stream: FirebaseAuth.instance.currentUser != null
+                ? FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser!.uid)
+                    .collection('investimentos')
+                    .doc(widget.startup['id'] ?? _getStartupId(widget.startup['ticker']))
+                    .snapshots()
+                : const Stream.empty(),
+            builder: (context, snapshot) {
+              final qtdReal = snapshot.data?.data() != null
+                  ? (snapshot.data!.data() as Map<String, dynamic>)['tokensComprados'] ?? 0
+                  : widget.startup['qtd'];
 
-                return Text(
-                  "$qtdReal ${widget.startup['ticker']}",
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF512DA8),
+              final precoAtual = widget.startup['preco'] as double;
+              final valorTotal = precoAtual * qtdReal;
+
+              return Column(
+                children: [
+                  Text(
+                    "$qtdReal ${qtdReal == 1 ? 'Token' : 'Tokens'}",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF512DA8),
+                    ),
                   ),
-                );
-              }
-            ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "R\$ ${precoAtual.toStringAsFixed(2)} por token",
+                          style: const TextStyle(fontSize: 14, color: Colors.black),
+                        ),
+                        const SizedBox(width: 16),
+                        Container(width: 1, height: 18, color: Colors.black),
+                        const SizedBox(width: 16),
+                        Text(
+                          "R\$ ${valorTotal.toStringAsFixed(2)} total",
+                          style: const TextStyle(fontSize: 14, color: Colors.black),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+              );
+            },
+          ),
             const SizedBox(height: 30),
 
             // 1. Botões com Funções Implementadas
@@ -744,6 +762,29 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
 
             // 3. Livro de Ofertas (Mantive sua estrutura de Table)
             _buildOrderBook(),
+
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: _abrirContrapropostaInfo,
+                  icon: const Icon(Icons.handshake_outlined, color: Color(0xFF512DA8), size: 16),
+                  label: const Text(
+                    "Contraproposta",
+                    style: TextStyle(color: Color(0xFF512DA8), fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    side: const BorderSide(color: Color(0xFF512DA8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
             const SizedBox(height: 30),
 
@@ -1023,7 +1064,7 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
           stream: FirebaseFirestore.instance
               .collection('startups')
               .doc(widget.startup['id'] ?? _getStartupId(widget.startup['ticker']))
-              .collection('Histórico')
+              .collection('Ofertas')
               .orderBy('data', descending: true)
               .limit(4)
               .snapshots(),
@@ -1038,9 +1079,9 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
               children: [
                 TableRow(
                   children: [
-                    _tableHeader("Tipo"),
-                    _tableHeader("Qtd"),
-                    _tableHeader("Preço (R\$)"),
+                    _tableHeader("Qtd Tokens"),
+                    _tableHeader("Valor Token"),
+                    _tableHeader("Total Pago"),
                   ],
                 ),
                 if (docs.isEmpty)
@@ -1049,7 +1090,7 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 8),
                         child: Text(
-                          'Nenhuma transação ainda.',
+                          'Nenhuma oferta ainda.',
                           style: TextStyle(color: Colors.grey, fontSize: 12),
                         ),
                       ),
@@ -1060,16 +1101,14 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
                 else
                   ...docs.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
-                    final tipo = data['tipo'] ?? 'Compra';
-                    final qtd = tipo == 'Venda'
-                        ? data['Tokens Vendidos']
-                        : data['Tokens Comprados'];
-                    final valor = data['Valor Token'];
+                    final tokens = (data['Tokens Comprados'] ?? 0) as num;
+                    final valorToken = (data['Valor Token'] ?? 0) as num;
+                    final totalPago = (data['Preco Pago'] ?? 0) as num;
                     return _orderRow(
-                      tipo,
-                      (qtd ?? 0).toString(),
-                      (valor as num).toStringAsFixed(2),
-                      tipo == 'Venda' ? Colors.red : Colors.green,
+                      tokens.toString(),
+                      'R\$ ${valorToken.toStringAsFixed(2)}',
+                      'R\$ ${totalPago.toStringAsFixed(2)}',
+                      Colors.black,
                     );
                   }),
               ],
@@ -1078,6 +1117,368 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
         ),
       ],
     ),
+  );
+}
+
+void _abrirContrapropostaInfo() {
+  final qtdController = TextEditingController();
+  final precoController = TextEditingController();
+  double porcentagem = 0;
+  bool mostrarPreco = false;
+
+  num totalTokensIssued = 1;
+  num totalVendidoGeral = 0;
+  bool dadosCarregados = false;
+  int desconto = 0;
+  double valorComDesconto = 0;
+  double valorSemDesconto = 0;
+  String? precoErro;
+  bool enviando = false;
+  bool carregando = false;
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (builderContext, setModalState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 28,
+              right: 28,
+              top: 28,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Icon(Icons.handshake_outlined, size: 48, color: Color(0xFF512DA8)),
+                const SizedBox(height: 16),
+                const Text(
+                  "Contraproposta",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Você pode fazer uma contraproposta investindo no mínimo em 5% ou mais das ações da startup.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Color(0xFFFFA000), height: 1.5),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: qtdController,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      if (newValue.text.isEmpty) return newValue;
+                      final n = int.tryParse(newValue.text);
+                      if (n == null || n <= 0) return oldValue;
+                      return newValue.copyWith(text: n.toString());
+                    }),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: "Quantidade de tokens",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.token),
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) async {
+                    final qtd = int.tryParse(value) ?? 0;
+                    if (qtd > 0) {
+                      if (!dadosCarregados && !carregando) {
+                        carregando = true;
+
+                        final startupId = widget.startup['id'] ?? _getStartupId(widget.startup['ticker']);
+
+                        final startupSnap = await FirebaseFirestore.instance
+                            .collection('startups')
+                            .doc(startupId)
+                            .get();
+                        totalTokensIssued = (startupSnap.data()?['totalTokensIssued'] ?? 1) as num;
+
+                        final historicoGeralSnap = await FirebaseFirestore.instance
+                            .collection('startups')
+                            .doc(startupId)
+                            .collection('Histórico')
+                            .get();
+
+                        for (var doc in historicoGeralSnap.docs) {
+                          final data = doc.data();
+                          if (data['tipo'] == 'Compra') {
+                            totalVendidoGeral += (data['Tokens Comprados'] ?? 0) as num;
+                          }
+                          if (data['tipo'] == 'Venda') {
+                            totalVendidoGeral -= (data['Tokens Vendidos'] ?? 0) as num;
+                          }
+                        }
+                        final ofertasSnap = await FirebaseFirestore.instance
+                            .collection('startups')
+                            .doc(startupId)
+                            .collection('Ofertas')
+                            .get();
+
+                        for (var doc in ofertasSnap.docs) {
+                          totalVendidoGeral += (doc.data()['Tokens Comprados'] ?? 0) as num;
+                        }
+
+                        dadosCarregados = true;
+                      }
+
+                      final tokensDisponiveis = (totalTokensIssued - totalVendidoGeral).toInt();
+
+                      if (qtd > tokensDisponiveis) {
+                        qtdController.text = tokensDisponiveis.toString();
+                        qtdController.selection = TextSelection.fromPosition(
+                          TextPosition(offset: qtdController.text.length),
+                        );
+                      }
+
+                      final qtdFinal = qtd > tokensDisponiveis ? tokensDisponiveis : qtd;
+                      final pct = qtdFinal == tokensDisponiveis
+                          ? 100.0
+                          : (qtdFinal / totalTokensIssued) * 100;
+
+                      setModalState(() {
+                        porcentagem = pct;
+                        mostrarPreco = true;
+                        desconto = (pct / 100 * 30).round();
+                        valorComDesconto = widget.startup['preco'] * (1 - desconto / 100);
+                        valorSemDesconto = widget.startup['preco'];
+                        precoController.clear();
+                      });
+                    } else {
+                      setModalState(() {
+                        porcentagem = 0;
+                        mostrarPreco = false;
+                        desconto = 0;
+                        precoController.clear();
+                      });
+                    }
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
+                if (mostrarPreco && porcentagem < 5)
+                  Text(
+                    "A sua contraproposta de ${porcentagem.toStringAsFixed(3)}% tem menos de 5% dos tokens.",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.red,
+                      height: 1.5,
+                    ),
+                  ),
+
+                if (mostrarPreco && porcentagem >= 5) ...[
+                  Text(
+                    "Você tem direito a um desconto de $desconto%, escolha um valor para pagar entre R\$ ${valorComDesconto.toStringAsFixed(2)} e R\$ ${valorSemDesconto.toStringAsFixed(2)}",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFFFFA000),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: precoController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d*[,.]?\d{0,2}')),
+                    ],
+                    decoration: InputDecoration(
+                      labelText: "Preço por token (R\$)",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon: const Icon(Icons.attach_money),
+                      errorText: precoErro,
+                    ),
+                    onChanged: (value) {
+                      final preco = double.tryParse(value.replaceAll(',', '.')) ?? 0;
+                      if (value.isEmpty) {
+                        setModalState(() { precoErro = null; });
+                        return;
+                      }
+                      if (preco < valorComDesconto || preco > valorSemDesconto) {
+                        setModalState(() {
+                          precoErro = 'Valor deve ser entre R\$ ${valorComDesconto.toStringAsFixed(2)} e R\$ ${valorSemDesconto.toStringAsFixed(2)}';
+                        });
+                      } else {
+                        setModalState(() { precoErro = null; });
+                      }
+                    },
+                  ),
+                ],
+
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF512DA8),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: enviando ? null : () async {
+
+                      final preco = double.tryParse(precoController.text.replaceAll(',', '.')) ?? 0;
+                      final qtd = int.tryParse(qtdController.text) ?? 0;
+
+                      if (qtd <= 0 || preco <= 0) {
+                        setModalState(() {
+                          enviando = false;
+                          precoErro = 'Preencha o preço por token.';
+                        });
+                        return;
+                      }
+
+                      const tolerancia = 0.01;
+
+                      if (preco < valorComDesconto - tolerancia || preco > valorSemDesconto + tolerancia) {
+                        setModalState(() { enviando = false; });
+                        ScaffoldMessenger.of(builderContext).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Preço deve estar entre R\$ ${valorComDesconto.toStringAsFixed(2)} e R\$ ${valorSemDesconto.toStringAsFixed(2)}.',
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      final totalNecessario = qtd * preco;
+                      final uid = FirebaseAuth.instance.currentUser?.uid;
+                      if (uid == null) {
+                        setModalState(() { enviando = false; }); // <--
+                        return;
+                      }
+
+                      setModalState(() { enviando = true; });
+
+                      try {
+                          debugPrint('Buscando saldo...');
+                          final saldoRef = FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(uid)
+                              .collection('carteira')
+                              .doc('saldo');
+                              
+                          final userSnap = await saldoRef.get();
+                          final saldoAtual = (userSnap.data()?['saldo'] ?? 0) as num;
+                          debugPrint('saldoAtual: $saldoAtual');
+
+                        if (saldoAtual < totalNecessario) {
+                          final falta = totalNecessario - saldoAtual;
+                          Navigator.pop(builderContext);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Saldo insuficiente. Faltam R\$ ${falta.toStringAsFixed(2)} para realizar a contraproposta.',
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        final startupId = widget.startup['id'] ?? _getStartupId(widget.startup['ticker']);
+
+                        await saldoRef.update({'saldo': saldoAtual - totalNecessario});
+
+                        await FirebaseFirestore.instance
+                            .collection('startups')
+                            .doc(startupId)
+                            .collection('Ofertas')
+                            .add({
+                          'Preco Pago': totalNecessario,
+                          'Tokens Comprados': qtd,
+                          'Valor Token': preco,
+                          'data': FieldValue.serverTimestamp(),
+                          'status': 'Sucesso',
+                          'tipo': 'Compra',
+                          'uid': uid,
+                        });
+
+                        final investimentoRef = FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(uid)
+                            .collection('investimentos')
+                            .doc(startupId);
+
+                        final investimentoSnap = await investimentoRef.get();
+
+                        if (investimentoSnap.exists) {
+                          final tokensAtuais = (investimentoSnap.data()?['tokensComprados'] ?? 0) as num;
+                          final valorAtuais = (investimentoSnap.data()?['valorPago'] ?? 0) as num;
+                          await investimentoRef.update({
+                            'tokensComprados': tokensAtuais + qtd,
+                            'valorPago': valorAtuais + totalNecessario,
+                          });
+                        } else {
+                          await investimentoRef.set({
+                            'tokensComprados': qtd,
+                            'valorPago': totalNecessario,
+                          });
+                        }
+
+                        Navigator.pop(builderContext);
+                        ScaffoldMessenger.of(builderContext).showSnackBar(
+                          const SnackBar(
+                            content: Text('Contraproposta enviada com sucesso!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } catch (e) {
+                        setModalState(() { enviando = false; });
+                        ScaffoldMessenger.of(builderContext).showSnackBar(
+                          const SnackBar(
+                            content: Text('Erro ao enviar contraproposta. Tente novamente.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+                    child: enviando
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          "Fazer Contraproposta",
+                          style: TextStyle(color: Colors.white, fontSize: 15),
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      );
+    },
   );
 }
 
@@ -1151,42 +1552,41 @@ class _AssetDetailsScreenState extends State<AssetDetailsScreen> {
 
 
   Widget _tableHeader(String label) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Text(
-      label,
-      style: const TextStyle(
-        fontSize: 10,
-        color: Colors.grey,
-        fontWeight: FontWeight.bold,
-      ),
+  padding: const EdgeInsets.symmetric(vertical: 8),
+  child: Text(
+    label,
+    style: const TextStyle(
+      fontSize: 10,
+      color: Colors.black,
+      fontWeight: FontWeight.bold,
     ),
-  );
+  ),
+);
 
-  TableRow _orderRow(String tipo, String qtd, String preco, Color color) {
-    return TableRow(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            tipo,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
+TableRow _orderRow(String tipo, String qtd, String preco, Color color) {
+  return TableRow(
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          tipo,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 12,
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(qtd, style: const TextStyle(fontSize: 12)),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text("R\$ $preco", style: const TextStyle(fontSize: 12)),
-        ),
-      ],
-    );
-  }
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(qtd, style: const TextStyle(fontSize: 12, color: Colors.green)),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(preco, style: const TextStyle(fontSize: 12, color: Colors.green)),
+      ),
+    ],
+  );
+}
 
   Widget _buildActionButton(IconData icon, String label, VoidCallback onTap) {
     return InkWell(
