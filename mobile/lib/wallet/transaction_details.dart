@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart'; // Importa o pacote básico de widgets do Flutter.
+//feito por camila fernandes costacurta RA:25012949 
+import 'package:flutter/material.dart'; // Biblioteca base do Flutter (permite usar widgets como Scaffold, Column, Text).
 
 // ESTA CLASSE DEFINE A TELA DE COMPROVANTE QUE APARECE QUANDO O USUÁRIO CLICA EM UMA TRANSAÇÃO NO HISTÓRICO.
 class TransactionDetailsScreen extends StatelessWidget { // Widget fixo (não muda de estado).
