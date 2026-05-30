@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
-import '../transaction_details_screen.dart';
+//feito por camila fernandes costacurta ra: 25012949 
+import 'package:flutter/material.dart'; // Biblioteca base do Flutter (permite usar widgets como Container, Column, Text).
+import 'package:cloud_firestore/cloud_firestore.dart'; // Biblioteca do Banco de Dados (permite usar FirebaseFirestore, QuerySnapshot).
+import 'package:firebase_auth/firebase_auth.dart'; // Biblioteca de Autenticação (permite usar FirebaseAuth, currentUser).
+import 'package:intl/intl.dart'; // Biblioteca de Formatação (permite usar DateFormat para arrumar datas).
+import '../transaction_details_screen.dart'; // Importa a tela de detalhes (permite navegar para TransactionDetailsScreen).
 
 class TransactionHistoryWidget extends StatefulWidget {
   //transactionhistorywidget é uma classe que representa o widget de histórico de transações.
