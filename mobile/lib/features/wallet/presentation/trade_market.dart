@@ -132,15 +132,19 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
               builder: (context, startupsSnap) {
                 if (!startupsSnap.hasData) return const Center(child: CircularProgressIndicator());
 
+                final currentUser = FirebaseAuth.instance.currentUser;
+                if (currentUser == null) return const SizedBox.shrink();
+
                 return StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance.collection('exchange').snapshots(),
                   builder: (context, exchangeSnap) {
                     if (!exchangeSnap.hasData) return const Center(child: CircularProgressIndicator());
 
-                    final userId = FirebaseAuth.instance.currentUser?.uid;
-                    final investStream = userId != null
-                        ? FirebaseFirestore.instance.collection('users').doc(userId).collection('investimentos').snapshots()
-                        : const Stream<QuerySnapshot>.empty();
+                    final investStream = FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(currentUser.uid)
+                        .collection('investimentos')
+                        .snapshots();
 
                     return StreamBuilder<QuerySnapshot>(
                       stream: investStream,
