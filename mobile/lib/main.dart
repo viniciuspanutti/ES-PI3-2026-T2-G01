@@ -6,7 +6,7 @@ import 'package:mobile/features/auth/presentation/home_screen.dart';
 import 'package:mobile/features/dashboard/main_wrapper_screen.dart';
 import 'firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
-//testing
+//definitivo
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
