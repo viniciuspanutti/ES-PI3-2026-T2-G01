@@ -1,17 +1,44 @@
-/**Vinicius
+/* Vinícius Panutti Salgado - 25007329
+
 * * Descrição ->  nossos dados das startups vindo do firestore
+*
+* ── startupRepository.ts — Camada de Acesso a Dados (Repository Pattern) ──
+* Centraliza TODAS as operações de leitura/escrita no Firestore para o
+* módulo de startups. Os handlers (Cloud Functions) NUNCA acessam o
+* Firestore diretamente — sempre passam por este repositório.
+*
+* Padrão Repository:
+*   Desacopla a lógica de negócio (handlers) da persistência (Firestore).
+*   Se no futuro trocarmos o Firestore por outro banco, basta alterar
+*   este ficheiro sem tocar nos handlers.
+*
+* Funções exportadas:
+*   • listStartupItems()      — lista todas as startups (versão resumida)
+*   • getStartupById(id)      — busca startup completa por ID
+*   • userIsInvestor(id, uid) — verifica se user é investidor
+*   • listPublicQuestions(id) — lista perguntas públicas da startup
+*   • createQuestion(id, doc) — cria pergunta na subcoleção
+*   • seedDemoStartups()      — popula catálogo com 5 startups demo
 */
 
+// FieldValue para serverTimestamp, Timestamp para conversão de datas
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+// Tipos TypeScript para type-safety nos documentos
 import {
   StartupDocument,
   StartupListItem,
   StartupQuestionDocument,
 } from "../types";
+// Instância singleton do Firestore Admin
 import { db } from "../shared/firebase";
 
+// Referência à coleção raiz 'startups' no Firestore
 const startupsCollection = db.collection("startups");
 
+// ── Dados demo das 5 startups do MVP ─────────────────────────────────
+// Array com os documentos completos que serão inseridos no Firestore
+// pela função seedDemoStartups(). Cada objeto contém todos os campos
+// necessários para renderizar a tela de detalhes no Flutter.
 const demoStartups: any[] = [
   {
     id: "ecocycle",
@@ -159,9 +186,9 @@ const demoStartups: any[] = [
   }
 ];
 
-/**Esta segunda parte faz o seguinte: Ela define o objeto StartupListItem, que é uma interface
- * yque define os campos que serão usados na lista de startups */
-
+// ── toListItem — Mapeia documento completo para versão resumida ──────
+// Extrai apenas os campos necessários para o card na lista do catálogo.
+// Isto reduz o payload enviado ao Flutter (não envia FAQ, founders, etc.)
 function toListItem(id: string, startup: StartupDocument): StartupListItem {
   return {
     id,
@@ -175,12 +202,18 @@ function toListItem(id: string, startup: StartupDocument): StartupListItem {
     tags: startup.tags,
   };
 }
+// ── listStartupItems — Lista todas as startups (versão card) ─────────
+// Busca até 100 documentos da coleção startups e mapeia cada um
+// para StartupListItem via toListItem(). Usado pela Cloud Function listStartups.
 export async function listStartupItems(): Promise<StartupListItem[]> {
   const snapshot = await startupsCollection.limit(100).get();
   return snapshot.docs.map((doc) =>
     toListItem(doc.id, doc.data() as StartupDocument)
   );
 }
+// ── getStartupById — Busca startup completa por ID ──────────────────
+// Retorna o documento completo (StartupDocument) ou undefined se não existir.
+// Usado pelo getStartupDetails handler para a tela de detalhes.
 export async function getStartupById(
   startupId: string
 ): Promise<StartupDocument | undefined> {
@@ -190,6 +223,10 @@ export async function getStartupById(
   }
   return startupSnapshot.data() as StartupDocument;
 }
+// ── userIsInvestor — Verifica se o user é investidor da startup ──────
+// Consulta a subcoleção investors/{uid} da startup.
+// Retorna true se o documento existir (o user investiu nesta startup).
+// Usado para controle de acesso a perguntas privadas e chat exclusivo.
 export async function userIsInvestor(
   startupId: string,
   uid: string
@@ -201,6 +238,10 @@ export async function userIsInvestor(
     .get();
   return investorSnapshot.exists;
 }
+// ── listPublicQuestions — Lista perguntas públicas de uma startup ────
+// Query Firestore com filtro visibility == "publica" e limit 50.
+// Converte Timestamps para ISO strings e ordena por data descendente
+// (mais recentes primeiro) em memória.
 export async function listPublicQuestions(startupId: string) {
   const questionsSnapshot = await startupsCollection
     .doc(startupId)
@@ -213,11 +254,17 @@ export async function listPublicQuestions(startupId: string) {
       id: doc.id,
       text: doc.get("text"),
       answer: doc.get("answer") ?? null,
+      // Conversão segura de Timestamp → ISO string (com optional chaining)
       answeredAt: doc.get("answeredAt")?.toDate?.()?.toISOString?.() ?? null,
       createdAt: doc.get("createdAt")?.toDate?.()?.toISOString?.() ?? null,
     }))
+    // Ordena por data descendente (mais recentes primeiro)
     .sort((left, right) => String(right.createdAt ?? "").localeCompare(String(left.createdAt ?? "")));
 }
+// ── createQuestion — Cria uma nova pergunta na subcoleção ────────────
+// Adiciona um documento na subcoleção questions da startup.
+// .add() gera um ID automático e retorna a referência do documento.
+// Retorna o ID gerado para confirmação ao Flutter.
 export async function createQuestion(
   startupId: string,
   question: StartupQuestionDocument
@@ -228,10 +275,17 @@ export async function createQuestion(
     .add(question);
   return questionRef.id;
 }
-/**Inserção de uma nova coleção no nosso banco de dados, rodado com npm run build e
- * firebase deploy --only functions,
- * E então:
- * curl -X POST https://seedstartupcatalog-sc2mrqrvtq-uc.a.run.app -H "Content-Type: application/json" -d '{"data": {}}'*/
+// ── Dados iniciais do pool de Exchange (AMM) ────────────────────────
+// Cada startup tem um pool de liquidez com:
+//   tokensDisponiveis  — tokens iniciais disponíveis para compra
+//   capitalArrecadado  — capital inicial no pool (R$)
+//   precoAtual         — preço calculado (capital / tokens)
+//   variacao           — variação percentual (0% no seed)
+//
+// Deploy:
+//   npm run build && firebase deploy --only functions
+//   curl -X POST https://seedstartupcatalog-sc2mrqrvtq-uc.a.run.app \
+//     -H "Content-Type: application/json" -d '{"data": {}}'
 const exchangeSeedData: Record<string, { tokensDisponiveis: number; capitalArrecadado: number; precoAtual: number; variacao: number }> = {
   agrisense: { tokensDisponiveis: 10000, capitalArrecadado: 50000.0, precoAtual: 5.0, variacao: 0 },
   devmatch: { tokensDisponiveis: 50000, capitalArrecadado: 75000.0, precoAtual: 11.5, variacao: 0 },
@@ -240,22 +294,35 @@ const exchangeSeedData: Record<string, { tokensDisponiveis: number; capitalArrec
   smartcampus: { tokensDisponiveis: 100000, capitalArrecadado: 100000.0, precoAtual: 10.0, variacao: 0 }
 };
 
+// ── seedDemoStartups — Popula Firestore com dados demo ──────────────
+// Usa Firestore Batch Write para inserir atomicamente:
+//   • 5 documentos na coleção startups (dados completos)
+//   • 5 documentos na coleção exchange (pools de liquidez AMM)
+//   • 365 × 5 = 1825 documentos de histórico de preços
+//
+// O histórico de preços é simulado usando Movimento Browniano
+// Geométrico (GBM), o mesmo modelo matemático usado para simular
+// preços de ações no mercado financeiro.
 export async function seedDemoStartups(): Promise<string[]> {
+  // Batch write: todas as operações são executadas atomicamente
   const batch = db.batch();
   const exchangeCollection = db.collection("exchange");
 
   for (const startup of demoStartups) {
+    // Referência ao documento da startup (ID definido pelo array)
     const startupRef = startupsCollection.doc(startup.id);
+    // Desestrutura para separar o ID dos dados (ID já está no doc path)
     const { id, ...data } = startup;
 
-    // Set startup data
+    // Insere dados da startup com timestamps de servidor
+    // merge: true preserva dados existentes se o documento já existir
     batch.set(startupRef, {
       ...data,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
 
-    // Set exchange data
+    // Insere dados do pool de liquidez na coleção exchange
     const exchangeData = exchangeSeedData[startup.id];
     if (exchangeData) {
       const exchangeRef = exchangeCollection.doc(startup.id);
@@ -265,17 +332,23 @@ export async function seedDemoStartups(): Promise<string[]> {
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
 
-      // ETAPA 1: Gerar 365 dias de histórico estatístico
+      // ── Geração de 365 dias de histórico de preços ─────────────────
+      // Cria um documento por dia na subcoleção historicoPrecos,
+      // permitindo que o frontend renderize gráficos de evolução de preço.
       const historicoCollection = exchangeRef.collection("historicoPrecos");
       const today = new Date();
-      let precoSimulado = 5.0; // O preço atual deve ser obrigatoriamente 5.00
+      let precoSimulado = 5.0; // Preço base inicial de R$ 5.00
+      // Seed determinístico baseado no comprimento do ID da startup
+      // (garante que cada startup tenha uma curva de preço diferente)
       const seedVal = startup.id.length + 10;
 
       for (let i = 0; i <= 365; i++) {
+        // Calcula a data retroativa (hoje - i dias)
         const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
+        // ID do documento = data formatada (ex: "2026-05-31")
         const dataDoc = `${yyyy}-${mm}-${dd}`;
 
         batch.set(historicoCollection.doc(dataDoc), {
@@ -283,17 +356,26 @@ export async function seedDemoStartups(): Promise<string[]> {
           preco: Number(precoSimulado.toFixed(4))
         });
 
-        // Movimento Browniano Geométrico reverso para o passado
-        // Variações diárias baseadas no ticker/id
+        // ── Movimento Browniano Geométrico (GBM) reverso ─────────────
+        // Simula variações diárias de preço usando uma função
+        // pseudo-aleatória determinística baseada em sin().
+        // Math.sin(seed + i) gera valores entre -1 e 1 de forma
+        // determinística (mesmo seed = mesma curva sempre).
         const rand = Math.sin(seedVal + i) * 10000;
+        // Extrai a parte fracionária para obter um valor uniforme [0,1)
         const uniform = rand - Math.floor(rand);
+        // Converte para um "choque" de -5% a +5% no preço
         const shock = (uniform - 0.5) * 0.1; // variação de -5% a +5%
-        
+
+        // Aplica o choque ao preço (multiplicativo, como no mercado real)
         precoSimulado = precoSimulado * (1 - shock);
+        // Garante que o preço nunca fique negativo ou zero
         if (precoSimulado <= 0) precoSimulado = 0.01;
       }
     }
   }
+  // Executa todas as escritas atomicamente
   await batch.commit();
+  // Retorna os IDs das startups criadas para confirmação
   return demoStartups.map((startup) => startup.id);
 }

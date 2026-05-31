@@ -1,3 +1,4 @@
+// Vinícius Panutti Salgado - 25007329
 // ── user_service.dart ──────────────────────────────────────────────────
 // Camada Data — serviço responsável por ler e escrever os dados de
 // segurança do usuário na coleção `users` do Firestore.

@@ -1,3 +1,21 @@
+// Vinícius Panutti Salgado - 25007329
+// ── startup_detail_screen.dart ─────────────────────────────────────────
+// Tela que exibe os detalhes completos de uma Startup específica.
+//
+// Funcionalidades principais:
+//   1. Exibição fragmentada usando widgets de especialidade: 
+//      StartupHeaderWidget, StartupMediaWidget, StartupSocietyWidget.
+//   2. Integração com Firebase para validação de investimento via _checkIfInvestor,
+//      controlando o acesso ao chat privado.
+//   3. Abertura do BottomSheet customizado (_showQuestionModal) para opções
+//      de enviar perguntas públicas (FAQ) ou privadas (somente investidor).
+//   4. Botão flutuante "INVESTIR NESTA STARTUP" que direciona o utilizador
+//      para o AssetDetailsScreen, simulando a compra de tokens (AMM).
+//
+// Fluxo de Negócio:
+//   - A verificação de investidor é feita no Firebase consultando a coleção:
+//     users/{userId}/investimentos/{startupId}.
+// ───────────────────────────────────────────────────────────────────────
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -9,8 +27,12 @@ import 'package:mobile/features/startups/presentation/widgets/startup_society_wi
 import 'package:mobile/features/startups/presentation/widgets/startup_media_widget.dart';
 import 'package:mobile/features/wallet/presentation/trade_market.dart';
 
+// ── _QuestionSheetStep ───────────────────────────────────────────────
+// Enum interno para controlar o estado do ModalBottomSheet de perguntas.
+// Controla as fases de seleção (options), pergunta pública, e área restrita (privada).
 enum _QuestionSheetStep { options, publicQuestion, privateQuestion }
 
+// ── StartupDetailScreen ──────────────────────────────────────────────
 class StartupDetailScreen extends StatelessWidget {
   final StartupDetail startup;
 

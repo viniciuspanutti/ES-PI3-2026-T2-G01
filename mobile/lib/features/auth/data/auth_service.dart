@@ -1,3 +1,4 @@
+// Vinícius Panutti Salgado - 25007329
 // ── auth_service.dart ─────────────────────────────────────────────────
 // Camada Data — integração real com Firebase Auth.
 // Substitui a autenticação local (SharedPreferences) por sessão na nuvem.

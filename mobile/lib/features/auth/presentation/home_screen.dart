@@ -1,20 +1,27 @@
+// Tom Bean
+// importa o core do Flutter
 import 'package:flutter/material.dart';
+// importa rotas da aplicação
 import 'package:mobile/core/routes/app_routes.dart';
 
+// Widget wrapper que retorna a HomeScreen
 class PaginaInicial extends StatelessWidget {
+  // construtor
   const PaginaInicial({super.key});
 
+  // build que delega para HomeScreen
   @override
   Widget build(BuildContext context) => const HomeScreen();
 }
 
+// Tela inicial com logo e botões de entrar/cadastrar
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.white, // fundo branco
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -22,14 +29,14 @@ class HomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(flex: 2),
+              const Spacer(flex: 2), // espaçamento superior
               Image.asset(
-                'assets/images/MesclaInvest_logo.png',
+                'assets/images/MesclaInvest_logo.png', // logo do app
                 height: 120,
               ),
               const SizedBox(height: 32),
               const Text(
-                'Bem-vindo(a) ao\nMesclaInvest',
+                'Bem-vindo(a) ao\nMesclaInvest', // título
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 28,
@@ -40,7 +47,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Seu portal para as melhores\noportunidades em startups.',
+                'Seu portal para as melhores\noportunidades em startups.', // subtítulo
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -48,7 +55,7 @@ class HomeScreen extends StatelessWidget {
                   height: 1.5,
                 ),
               ),
-              const Spacer(flex: 3),
+              const Spacer(flex: 3), // espaço antes dos botões
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF5A2D91),
@@ -59,7 +66,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   elevation: 2,
                 ),
-                onPressed: () => Navigator.of(context).pushNamed(AppRoutes.login),
+                onPressed: () => Navigator.of(context).pushNamed(AppRoutes.login), // navega para login
                 child: const Text(
                   'Entrar',
                   style: TextStyle(
@@ -78,7 +85,7 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () => Navigator.of(context).pushNamed(AppRoutes.cadastro),
+                onPressed: () => Navigator.of(context).pushNamed(AppRoutes.cadastro), // navega para cadastro
                 child: const Text(
                   'Cadastrar',
                   style: TextStyle(

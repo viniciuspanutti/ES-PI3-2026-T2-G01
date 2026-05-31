@@ -1,3 +1,19 @@
+// Vinícius Panutti Salgado - 25007329
+// ── catalogo_de_startups.dart ──────────────────────────────────────────
+// Tela de listagem (Catálogo) de todas as startups disponíveis na plataforma.
+//
+// Responsabilidades:
+//   1. Buscar e exibir a lista de startups reais do Firestore (StartupService).
+//   2. Fornecer um filtro interativo por estágio de maturidade ('Nova', etc.).
+//   3. Normalizar strings para permitir filtragem case/accent-insensitive.
+//   4. Exibir cards individuais com as informações principais da startup
+//      e gerenciar a navegação para a tela de detalhes (StartupDetailScreen).
+//
+// Padrão de Projeto Utilizado:
+//   - FutureBuilder: Gerencia estados assíncronos (carregando, erro, sucesso)
+//     durante a chamada ao Firebase. O carregamento de imagem também tenta
+//     buscar de URL remota ou localmente como fallback (Mock vs Real).
+// ───────────────────────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
 // ── SUBSTITUIÇÃO DO MOCK ─────────────────────────────────────────────
 // Antes:  import '../../../data/startup_mock.dart';
@@ -7,6 +23,8 @@ import '../../../data/startup_service.dart';
 import '../../../domain/startup.dart';
 import 'startup_detail_screen.dart';
 
+// ── CatalogoStartupsPage — Widget Stateful ───────────────────────────
+// Mantém o estado do filtro selecionado e do Future do Firestore.
 class CatalogoStartupsPage extends StatefulWidget {
   const CatalogoStartupsPage({super.key});
 
