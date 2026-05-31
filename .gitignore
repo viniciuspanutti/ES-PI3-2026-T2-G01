@@ -1,4 +1,5 @@
 # Node.js (Firebase Functions)
+node_modules/
 functions/node_modules/
 functions/.env
 functions/dist/
@@ -20,6 +21,7 @@ mobile/.pub/
 
 # IDEs e Ferramentas Locais (Sujeira de IA e editores)
 .idea/
+.vscode/
 .agents/
 .claude/
 skills-lock.json
@@ -27,3 +29,4 @@ skills-lock.json
 # Sistema
 .DS_Store
 *.log
+.env

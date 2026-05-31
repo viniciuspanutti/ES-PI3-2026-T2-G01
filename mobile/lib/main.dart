@@ -6,12 +6,11 @@ import 'package:mobile/features/auth/presentation/home_screen.dart';
 import 'package:mobile/features/dashboard/main_wrapper_screen.dart';
 import 'firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
-//testing
+
+//definitivo
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await initializeDateFormatting('pt_BR', null);
   runApp(const MyApp());
 }
@@ -53,8 +52,8 @@ class MyApp extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () {
                   Navigator.pushNamedAndRemoveUntil(
-                    context, 
-                    AppRoutes.mainRoute, 
+                    context,
+                    AppRoutes.mainRoute,
                     (route) => false,
                   );
                 },
@@ -62,7 +61,9 @@ class MyApp extends StatelessWidget {
               title: const Text('Em Desenvolvimento'),
             ),
             body: const Center(
-              child: Text('Esta funcionalidade ainda não foi implementada pela equipe.'),
+              child: Text(
+                'Esta funcionalidade ainda não foi implementada pela equipe.',
+              ),
             ),
           ),
         );
