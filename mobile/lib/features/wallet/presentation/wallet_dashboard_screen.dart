@@ -158,8 +158,6 @@ class _WalletDashboardScreenState extends State<WalletDashboardScreen> {
     });
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -198,9 +196,8 @@ class _WalletDashboardScreenState extends State<WalletDashboardScreen> {
                           primaryPurple: _primaryPurple,
                           showBalance: _showBalance,
                           onCardTap: () => _openRoute(AppRoutes.carteira),
-                          onMoreTap: () => _showMessage(
-                            'Op\u00e7\u00f5es da carteira',
-                          ),
+                          onMoreTap: () =>
+                              _showMessage('Op\u00e7\u00f5es da carteira'),
                         ),
                         const SizedBox(height: 26),
                         QuickActions(onRouteTap: _openRoute),
@@ -211,8 +208,7 @@ class _WalletDashboardScreenState extends State<WalletDashboardScreen> {
                           statusColor: _statusBlue,
                           growthColor: _positiveGreen,
                           onRetry: _reloadInvestments,
-                          onViewAllTap: () =>
-                              _openRoute(AppRoutes.catalogo),
+                          onViewAllTap: () => _openRoute(AppRoutes.catalogo),
                           onStartupTap: _openStartupDetails,
                           onMoreTap: () => _showMessage(
                             'Op\u00e7\u00f5es dos investimentos',
