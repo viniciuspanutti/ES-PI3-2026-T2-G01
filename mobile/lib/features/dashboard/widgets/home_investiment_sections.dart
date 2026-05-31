@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile/features/startups/data/startup_service.dart';
@@ -68,6 +69,13 @@ class FirestoreInvestmentSections extends StatelessWidget {
                 ),
               ),
             ],
+          );
+        }
+
+        if (FirebaseAuth.instance.currentUser == null) {
+          return _buildSection(
+            investments: const [],
+            message: 'Você ainda não possui investimentos em carteira. Explore o catálogo!',
           );
         }
 

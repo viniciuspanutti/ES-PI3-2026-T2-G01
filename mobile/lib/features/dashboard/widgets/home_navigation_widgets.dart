@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/core/routes/app_routes.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
@@ -147,6 +148,7 @@ class WalletCard extends StatefulWidget {
 class _WalletCardState extends State<WalletCard> {
   double _saldo = 0;
   bool _carregando = true;
+  StreamSubscription? _subscription;
 
   @override
   void initState() {
@@ -161,7 +163,7 @@ class _WalletCardState extends State<WalletCard> {
       return;
     }
 
-    FirebaseFirestore.instance
+    _subscription = FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
         .collection('carteira')
@@ -174,6 +176,12 @@ class _WalletCardState extends State<WalletCard> {
             _carregando = false;
           });
         });
+  }
+
+    @override
+  void dispose() {
+    _subscription?.cancel(); // <-- cancela ao sair
+    super.dispose();
   }
 
   @override

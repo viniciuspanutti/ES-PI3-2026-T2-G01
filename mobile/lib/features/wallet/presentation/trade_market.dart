@@ -184,7 +184,12 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
                 // Exibe um indicador de carregamento enquanto os dados não chegam
                 if (!startupsSnap.hasData) return const Center(child: CircularProgressIndicator());
 
-                // Monitora as atualizações de mercado (preços) em tempo real
+
+                
+                final currentUser = FirebaseAuth.instance.currentUser;
+                if (currentUser == null) return const SizedBox.shrink();
+
+
                 return StreamBuilder<QuerySnapshot>(
                   // Define o fluxo de dados em tempo real da coleção 'exchange'
                   stream: FirebaseFirestore.instance.collection('exchange').snapshots(),
@@ -193,12 +198,19 @@ class _BalcaoNegociacaoPageState extends State<BalcaoNegociacaoPage> {
                     // Exibe carregamento se os dados de mercado não estiverem prontos
                     if (!exchangeSnap.hasData) return const Center(child: CircularProgressIndicator());
 
+
                     // Obtém o ID do usuário autenticado para buscar seus investimentos
                     final userId = FirebaseAuth.instance.currentUser?.uid;
                     // Define o fluxo de dados de investimentos se o usuário estiver logado
                     final investStream = userId != null
                         ? FirebaseFirestore.instance.collection('users').doc(userId).collection('investimentos').snapshots()
                         : const Stream<QuerySnapshot>.empty();
+                    final investStream = FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(currentUser.uid)
+                        .collection('investimentos')
+                        .snapshots();
+
 
                     // Monitora os investimentos do usuário em tempo real
                     return StreamBuilder<QuerySnapshot>(

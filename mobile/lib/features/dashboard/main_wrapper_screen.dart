@@ -20,15 +20,12 @@ class _MainWrapperScreenState extends State<MainWrapperScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          const WalletDashboardScreen(),
-          const CatalogoStartupsPage(),
-          _buildBalcaoComTrava(),
-          const ProfileScreen(),
-        ],
-      ),
+      body: [
+        const WalletDashboardScreen(),
+        const CatalogoStartupsPage(),
+        _buildBalcaoComTrava(),
+        const ProfileScreen(),
+      ][_currentIndex],
       // ── BARRA DE NAVEGAÇÃO GLOBAL ─────────────────────────────────────────────
       bottomNavigationBar: Container(
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -77,6 +74,10 @@ class _MainWrapperScreenState extends State<MainWrapperScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
+
+      if (FirebaseAuth.instance.currentUser == null) {
+        return _buildBalcaoBloqueado();
+      }
 
         final docs = snapshot.data?.docs ?? [];
         final isInvestor = docs.any((doc) {
