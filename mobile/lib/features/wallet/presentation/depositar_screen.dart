@@ -51,7 +51,11 @@ class _DepositarScreenState extends State<DepositarScreen> {
 
     if (resultado.data['success'] == true) {
       if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      });
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

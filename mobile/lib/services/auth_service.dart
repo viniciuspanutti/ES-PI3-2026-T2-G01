@@ -43,7 +43,7 @@ class AuthService {
     final functions = FirebaseFunctions.instanceFor(region: 'us-central1');
       // Garante que o documento Firestore existe para este usuário
     try {
-      final resultado = await functions.httpsCallable('criarCarteira-criarCarteira').call();
+      final resultado = await functions.httpsCallable('criarCarteira').call();
       debugPrint('Resultado criarCarteira: ${resultado.data}');
     } catch (e) {
       debugPrint('Erro criarCarteira: $e');
@@ -68,6 +68,13 @@ class AuthService {
         email: email.trim(),
         password: password,
       );
+      // Instancia a carteira para o novo usuário no Firestore
+      final functions = FirebaseFunctions.instanceFor(region: 'us-central1');
+      try {
+        await functions.httpsCallable('criarCarteira').call();
+      } catch (e) {
+        debugPrint('Erro a instanciar a carteira no registo: $e');
+      }
       // Cria o documento do usuário no Firestore na primeira vez
       await _userService.ensureUserDocument(credential.user!);
       return credential;

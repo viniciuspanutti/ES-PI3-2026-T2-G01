@@ -47,7 +47,6 @@ class HomeHeader extends StatelessWidget {
           child: Text(
             'Ol\u00e1, $userName',
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: primaryPurple,
               fontSize: 17,
@@ -169,12 +168,12 @@ class _WalletCardState extends State<WalletCard> {
         .doc('saldo')
         .snapshots()
         .listen((snap) {
-      if (!mounted) return;
-      setState(() {
-        _saldo = (snap.data()?['saldo'] as num? ?? 0).toDouble();
-        _carregando = false;
-      });
-    });
+          if (!mounted) return;
+          setState(() {
+            _saldo = (snap.data()?['saldo'] as num? ?? 0).toDouble();
+            _carregando = false;
+          });
+        });
   }
 
   @override
@@ -182,8 +181,8 @@ class _WalletCardState extends State<WalletCard> {
     final saldoTexto = _carregando
         ? 'Carregando...'
         : widget.showBalance
-            ? 'R\$ ${_saldo.toStringAsFixed(2)}'
-            : 'R\$ ******';
+        ? 'R\$ ${_saldo.toStringAsFixed(2)}'
+        : 'R\$ ******';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),

@@ -16,9 +16,9 @@ export const depositar = functions.https.onCall(async (request: any) => {
       .collection("carteira")
       .doc("saldo");
 
-    await carteiraRef.update({
+    await carteiraRef.set({
       saldo: admin.firestore.FieldValue.increment(valor),
-    });
+    }, { merge: true });
 
     return { success: true, message: "Depósito realizado com sucesso." };
 

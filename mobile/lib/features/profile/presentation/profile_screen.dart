@@ -68,6 +68,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/login',
+                  (route) => false,
+                );
+              }
             },
             child: const Text(
               'Fazer Logout',

@@ -25,6 +25,8 @@ class _LoginPageState extends State<LoginPage> {
   // ── INTEGRAÇÃO FIREBASE AUTH ───────────────────────────────────────
   final AuthService _authService = AuthService();
   bool _isLoading = false;
+  bool _rememberMe = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -196,7 +198,18 @@ class _LoginPageState extends State<LoginPage> {
                 CampoDeTexto(
                   controller: passwordController,
                   hintText: 'Senha',
-                  obscureText: true,
+                  obscureText: _obscurePassword,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey[700],
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
                 ),
 
                 const SizedBox(height: 30,),
@@ -212,10 +225,19 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(left: 30),
-                      child: Image.asset(
-                        'assets/images/Checkmark.png',
-                        width: 25,
+                      padding: const EdgeInsets.only(left: 18),
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Checkbox(
+                          value: _rememberMe,
+                          activeColor: const Color(0xFF512DA8),
+                          onChanged: (value) {
+                            setState(() {
+                              _rememberMe = value!;
+                            });
+                          },
+                        ),
                       ),
                     ),
                     Padding(

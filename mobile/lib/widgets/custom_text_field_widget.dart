@@ -4,13 +4,15 @@ class CampoDeTexto extends StatelessWidget {
   final TextEditingController controller; // pegar o que o usuario digitou dps
   final String hintText; // colocar o texto em cima de onde digitar
   final bool obscureText; // esconder a senha
+  final Widget? suffixIcon; // ícone opcional no final do campo
 
   const CampoDeTexto({
-    super.key, 
+    super.key,
     required this.controller,
     required this.hintText,
-    required this.obscureText
-    });
+    required this.obscureText,
+    this.suffixIcon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +31,7 @@ class CampoDeTexto extends StatelessWidget {
           fillColor: Colors.grey[200],
           filled: true,
           hintText: hintText,
+          suffixIcon: suffixIcon,
         ),
       ),
     );

@@ -23,9 +23,9 @@ export const sacar = functions.https.onCall(async (request: any) => {
       return { success: false, message: "Saldo insuficiente." };
     }
 
-    await carteiraRef.update({
+    await carteiraRef.set({
       saldo: admin.firestore.FieldValue.increment(-valor),
-    });
+    }, { merge: true });
 
     return { success: true, message: "Saque realizado com sucesso." };
 

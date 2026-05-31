@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/core/routes/app_routes.dart';
 import 'package:mobile/widgets/custom_back_to_menu_button_widget.dart';
 import 'package:mobile/widgets/custom_back_arrow_widget.dart';
 
@@ -91,7 +92,11 @@ class _EmailEnviadoState extends State<EmailEnviado> {
 
                                   BotaoVoltarMenu(
                                     onTap: (){
-                                      Navigator.pushNamed(context, '/menu');
+                                      Navigator.pushNamedAndRemoveUntil(
+                                        context,
+                                        AppRoutes.login,
+                                        (route) => false,
+                                      );
                                     }
                                   )
                                   
